@@ -1,0 +1,180 @@
+# Software Requirements Specification (SRS) for Second-Hand Bike Selling Platform
+
+## 1. Introduction
+
+### 1.1 Purpose
+The purpose of this Software Requirements Specification (SRS) is to provide a detailed description of the functional and non-functional requirements for a web-based platform designed for a small second-hand bike selling business. The platform will include a public-facing website for customers to browse, search, and inquire about bikes, as well as an integrated admin panel for managing listings, finances, and operations. This SRS elaborates on the provided requirements to ensure a robust, user-friendly, and scalable application without altering the core context.
+
+### 1.2 Scope
+The platform will:
+- Allow users to view and interact with bike listings, sell inquiries, and informational pages.
+- Provide an admin panel for internal management of bikes, finances, and document verification.
+- Support responsiveness across devices (desktop, tablet, mobile).
+- Integrate basic email notifications for inquiries and admin alerts.
+- Handle image uploads for bike listings.
+- Exclude features like user accounts for customers (anonymous browsing), payment processing, or advanced e-commerce (focus on inquiry-based sales).
+
+Out of scope: Real-time chat, mobile apps, advanced analytics beyond specified charts, or integration with external payment gateways.
+
+### 1.3 Definitions, Acronyms, and Abbreviations
+- **SRS**: Software Requirements Specification
+- **NID**: National Identity Document (for verification)
+- **BRTA**: Bangladesh Road Transport Authority (assumed based on context; portal for vehicle document verification)
+- **CC**: Cubic Centimeters (bike engine capacity)
+- **Hero Section**: Prominent banner or introductory area on the home page.
+- **Infinity Scroll**: Continuous loading of content as the user scrolls (e.g., for reviews).
+- **Modal**: Pop-up dialog for forms or actions.
+- **Sheet**: Bottom-drawer UI element for mobile filters.
+- **Trailing Bike Sells**: Bikes listed for sale that have been held for more than 1 month without selling.
+
+### 1.4 References
+- Technology Stack: Next.js (v14+), TypeScript, Tailwind CSS, Shadcn UI components, Next.js App Router for backend APIs, MongoDB Atlas for database, Nodemailer for email, Multer (or Vercel-supported alternative like Vercel Blob Storage) for image uploads.
+- Deployment: Vercel (implied by tech stack compatibility).
+- UI/UX Best Practices: Responsive design using Tailwind CSS media queries.
+
+### 1.5 Overview
+This SRS is organized into overall description, specific requirements (functional and non-functional), and supporting information.
+
+## 2. Overall Description
+
+### 2.1 Product Perspective
+This platform addresses the needs of a small business selling second-hand bikes by providing an online presence to showcase inventory, build trust through verified documents and services, and streamline internal operations. It differentiates from generic marketplaces by emphasizing paper verification, name change services, and partner profit tracking.
+
+### 2.2 Product Functions
+- **Public Website**: Browsing listings, viewing details, submitting sell inquiries, reading about services and policies.
+- **Admin Panel**: Secure login, dashboard analytics, bike management, finance tracking, document verification.
+- **Shared Features**: Navigation bar (excluding admin access for public users), responsive design, SEO-friendly URLs.
+
+### 2.3 User Classes and Characteristics
+- **Customers (Public Users)**: Bike buyers/sellers, tech-savvy or casual users, accessing via web browsers on desktop/mobile. No login required.
+- **Admins**: Business owners/partners, requiring secure access for management. Assumed 2-5 users with basic computer skills.
+- **Partners**: Subset of admins; view profit shares but no separate roles.
+
+### 2.4 Operating Environment
+- **Frontend**: Web browser (Chrome, Firefox, Safari, Edge; latest versions).
+- **Backend**: Node.js runtime via Next.js App Router.
+- **Database**: MongoDB Atlas (cloud-hosted).
+- **Deployment**: Vercel for hosting, ensuring serverless scalability.
+- **Hardware**: Standard user devices; no special requirements.
+
+### 2.5 Design and Implementation Constraints
+- Use specified tech stack exclusively.
+- Ensure Vercel compatibility (e.g., for image uploads, prefer Vercel Blob over Multer if needed for serverless).
+- Implement authentication for admin panel (e.g., JWT or NextAuth).
+- Follow RESTful API principles for backend routes.
+- Use TypeScript for type safety.
+- Shadcn for reusable UI components (e.g., cards, modals, sheets).
+
+### 2.6 Assumptions and Dependencies
+- Internet access for all users.
+- MongoDB Atlas setup with proper credentials.
+- Nodemailer configured with an SMTP provider (e.g., Gmail for development).
+- BRTA portal API/integration available (if not, simulate with links or manual verification).
+- Images uploaded are optimized for web (e.g., <5MB per file).
+- Business provides content (e.g., images, descriptions) for initial setup.
+
+## 3. Specific Requirements
+
+### 3.1 External Interface Requirements
+- **User Interfaces**: Responsive web pages using Tailwind CSS and Shadcn components.
+- **Hardware Interfaces**: None.
+- **Software Interfaces**:
+  - MongoDB Atlas for data storage/retrieval.
+  - Nodemailer for sending emails (e.g., inquiry confirmations).
+  - External links: BRTA portal for document verification.
+- **Communication Interfaces**: HTTPS for all API calls; email for notifications.
+
+### 3.2 Functional Requirements
+
+#### 3.2.1 Public Website
+
+**Navigation Bar**: Fixed top nav with links to Home, Bike Listings, About Us, Sell Your Bike, Bike Wash, Terms & Conditions, Privacy Policy. No admin link visible.
+
+**Home Page**:
+1. **Hero Section**: Full-width banner with high-quality bike images, business tagline (e.g., "Reliable Second-Hand Bikes with Verified Papers"), and a call-to-action button (e.g., "Browse Listings").
+2. **Current Listing Cards**: Horizontal scrolling carousel of bike cards (image, brand, model, price, brief details). Include a "View All" button linking to Bike Listings page. Limit to 5-10 cards; fetch dynamically from database.
+3. **Verification Process Section**: Descriptive text and icons explaining bike paper verification, name change service, and paper exchange assurance. Use bullet points or steps for clarity.
+4. **Recently Sold Bikes**: Similar to listing cards, horizontal scroll showing sold bikes (e.g., last 10 sold). Helps build trust.
+5. **Contact Section for Sellers**: Form or button to inquire about selling a bike, linking to Sell Your Bike page.
+6. **Review Section**: Infinity scroll of customer reviews (cards with rating, text, name/date). Fetch paginated data from database; load more on scroll.
+
+**Bike Listing Page**:
+1. **Search and Filter**: Search bar for keywords (e.g., brand, model). Filters: Price range (sliders/min-max inputs), Brands (dropdown/multi-select).
+2. **Desktop Layout**: Left sidebar for filters; right main area for paginated results (grid of bike cards).
+3. **Mobile Layout**: Fixed search bar below nav; filter button opens bottom sheet with filter options. Apply filters and close sheet to update results.
+
+**Bike Details Page**:
+1. **Multiple Image Display**: Carousel or gallery for bike images (support 5-10 images per bike).
+2. **Bike Details**: Display fields: CC, Brand, Model, Manufacturing Year, Documents List (non-downloadable strings, e.g., "RC Book, Insurance, Pollution Certificate"), Price, Total Miles, Years in Use, Any Repairs After Purchase (yes/no with details), Free Wash (yes/no), Description. Include a share button (social media links or copy URL).
+3. **SEO**: Dynamic title/meta based on bike details.
+
+**About Us Page**:
+- Brief description of business ethics (e.g., transparency, quality assurance) and reason for platform (e.g., simplifying second-hand bike transactions).
+- Team members: Cards with names, roles, photos, short bios.
+- "Ready to Start Your Journey?" section: Motivational text with CTAs to listings or sell page.
+
+**Sell Your Bike Page**:
+- Contact form: Fields for name, email, phone, bike details (brand, model, year, miles, description), upload images (optional).
+- Emergency contact info: Display business phone, email, address.
+- Guideline: Step-by-step process (e.g., 1. Submit inquiry, 2. Inspection, 3. Verification, 4. Listing/Sale).
+- On submit, send email notification to admin and confirmation to user.
+
+**Bike Wash Page**:
+1. **Basic Wash Packages**: List/table of packages (e.g., Basic: $10, Premium: $20) with descriptions and prices.
+2. **Location**: Details of the single location (address, map embed if possible via Google Maps iframe, hours).
+
+**Terms and Conditions Page**: Static page with legal terms (e.g., warranty disclaimers, usage policies).
+**Privacy Policy Page**: Static page explaining data handling (e.g., form submissions, no cookies beyond essentials).
+
+#### 3.2.2 Admin Panel
+- **Access**: Separate login page (not linked in public nav). Use email/password authentication; store hashed passwords in MongoDB.
+- **Navigation**: Sidebar or top nav for Dashboard (Landing), Bike Listings, Finance, Document Verify. Logout button.
+
+**Landing Page (Dashboard)**:
+1. **Details Breakdown**: Cards/charts for all-time profit, forecasted profit from listed bikes (e.g., sum of (selling price - purchase price - costs)), trailing bikes held >1 month (list/count with alerts).
+2. **Charts and Graphs**: Use libraries like Recharts (compatible with Next.js) for line/bar charts (e.g., monthly sales, profit trends).
+3. **Filter**: Single dropdown for year/month; apply to entire page data.
+
+**Bike Listings Section**:
+1. **All Listed Bikes**: Table/grid view with columns: Image, Brand, Model, Purchase Price, Selling Price, Status (listed/sold), Hold Duration. Pagination and search.
+2. **List a New Bike**: Button opens modal with form: Fields for brand, model, CC, year, miles, description, purchase price, selling price, images (multi-upload), documents list, repairs (yes/no/details), free wash (yes/no), partner investments (multi-field for partner names/amounts).
+3. **Update a Listed Bike**: Edit button per bike opens similar modal; allow image updates/deletions.
+
+**Finance Section**:
+1. **Total Breakdown**: Summary cards for profits, losses, costs; detailed table of transactions.
+2. **Add Costs**: Form to add costs (type: repair/transport/other, amount, link to bike ID if applicable, auto-adjust bike price option via checkbox). Update bike's effective selling price if selected.
+3. **Forecasting**: Calculations for projected profit/loss based on listed items, historical sales, added costs (e.g., average sell time, cost projections). Display in charts.
+4. **Partner Profit Sharing**: When listing/updating bikes, input partner investments. Dashboard shows per-partner profit shares (e.g., proportional to investment), total distributions. Track in database per bike/transaction.
+
+**Document Verify Section**:
+- NID Verification: Form to upload/enter NID details; basic validation (e.g., format check).
+- Link to BRTA Portal: Button or embed to query vehicle documents (if API available; otherwise, manual link with instructions). Store verification status per bike.
+
+#### 3.2.3 Backend and Data Management
+- **APIs**: Next.js App Router endpoints for CRUD on bikes, finances, reviews, inquiries.
+- **Database Schema** (MongoDB):
+  - Bikes: { id, brand, model, cc, year, miles, description, images[], documents[], purchasePrice, sellingPrice, costs[], partners[{name, investment}], status, soldDate, etc. }
+  - Finances: { id, type, amount, bikeId, date }
+  - Inquiries: { id, name, email, bikeDetails, etc. }
+  - Reviews: { id, rating, text, date }
+  - Admins: { id, email, passwordHash }
+- **Email**: Nodemailer for sending inquiry alerts to admins and confirmations.
+- **Image Upload**: Handle multi-file uploads; store in Vercel Blob or similar; generate URLs for display.
+
+### 3.3 Non-Functional Requirements
+- **Performance**: Page load <2s; API responses <500ms. Use lazy loading for images/reviews.
+- **Security**: HTTPS; input validation/sanitization; admin auth with sessions; protect against SQL injection/XSS.
+- **Usability**: Intuitive UI with Shadcn components; accessibility (ARIA labels, keyboard nav).
+- **Reliability**: Error handling (e.g., 404 for missing bikes); backups via MongoDB Atlas.
+- **Scalability**: Serverless design; handle up to 100 concurrent users initially.
+- **Maintainability**: TypeScript types; modular code; comments in code.
+- **Compatibility**: Cross-browser; responsive (mobile-first with Tailwind).
+- **Internationalization**: English only; potential for future localization.
+
+## 4. Supporting Information
+- **Development Phases**: Design (wireframes), Implementation (frontend/backend), Testing (unit/integration/e2e with Jest), Deployment.
+- **Testing**: Cover edge cases (e.g., no listings, invalid forms); manual UI testing on devices.
+- **Documentation**: Inline code comments; separate README.md with setup instructions, API docs (e.g., via Swagger if added).
+- **Future Enhancements**: User accounts, payments (not in scope now).
+
+This SRS provides a comprehensive blueprint for development, ensuring the application meets business needs while leveraging the specified technologies for efficiency and maintainability.
