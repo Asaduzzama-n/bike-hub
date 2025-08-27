@@ -1,248 +1,215 @@
-// import { NextRequest, NextResponse } from 'next/server';
-// import { connectToDatabase } from '@/lib/mongodb';
-// import { ObjectId } from 'mongodb';
-// import { cookies } from 'next/headers';
-// import { jwtVerify } from 'jose';
+import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
+import { Collections } from '@/lib/models/admin';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 
-// // Verify admin authentication
-// async function verifyAdmin(request: NextRequest) {
-//   try {
-//     const cookieStore = cookies();
-//     const token = await cookieStore.get('adminToken')?.value;
+// Admin verification function
+async function verifyAdmin(request: NextRequest) {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get('adminToken')?.value;
 
-//     if (!token) {
-//       return null;
-//     }
+    if (!token) {
+      return null;
+    }
 
-//     const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
-//     const { payload } = await jwtVerify(token, secret);
-//     return payload;
-//   } catch (error) {
-//     return null;
-//   }
-// }
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
+    const { payload } = await jwtVerify(token, secret);
+    return payload;
+  } catch (error) {
+    return null;
+  }
+}
 
-// // GET - Fetch all bikes with filtering and pagination
-// export async function GET(request: NextRequest) {
-//   try {
-//     const admin = await verifyAdmin(request);
-//     if (!admin) {
-//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//     }
+// GET - Admin route to fetch all bikes with detailed calculations
+export async function GET(request: NextRequest) {
+  try {
+    const admin = await verifyAdmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
-//     const { searchParams } = new URL(request.url);
-//     const page = parseInt(searchParams.get('page') || '1');
-//     const limit = parseInt(searchParams.get('limit') || '10');
-//     const search = searchParams.get('search') || '';
-//     const status = searchParams.get('status') || '';
-//     const brand = searchParams.get('brand') || '';
-//     const sortBy = searchParams.get('sortBy') || 'createdAt';
-//     const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const brand = searchParams.get('brand') || '';
+    const condition = searchParams.get('condition') || '';
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-//     const { db } = await connectToDatabase();
-//     const bikesCollection = db.collection('bikes');
+    const { db } = await connectToDatabase();
+    const bikesCollection = db.collection(Collections.BIKES);
 
-//     // Build filter query
-//     const filter: any = {};
+    // Build filter query
+    const filter: any = {};
     
-//     if (search) {
-//       filter.$or = [
-//         { brand: { $regex: search, $options: 'i' } },
-//         { model: { $regex: search, $options: 'i' } },
-//         { description: { $regex: search, $options: 'i' } }
-//       ];
-//     }
+    if (search) {
+      filter.$or = [
+        { brand: { $regex: search, $options: 'i' } },
+        { model: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-//     if (status) {
-//       filter.status = status;
-//     }
+    if (status) {
+      filter.status = status;
+    }
 
-//     if (brand) {
-//       filter.brand = { $regex: brand, $options: 'i' };
-//     }
+    if (brand) {
+      filter.brand = { $regex: brand, $options: 'i' };
+    }
 
-//     // Count total documents
-//     const total = await bikesCollection.countDocuments(filter);
+    if (condition) {
+      filter.condition = condition;
+    }
 
-//     // Fetch bikes with pagination
-//     const bikes = await bikesCollection
-//       .find(filter)
-//       .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-//       .skip((page - 1) * limit)
-//       .limit(limit)
-//       .toArray();
+    if (minPrice || maxPrice) {
+      filter.sellPrice = {};
+      if (minPrice) filter.sellPrice.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.sellPrice.$lte = parseFloat(maxPrice);
+    }
 
-//     return NextResponse.json({
-//       bikes,
-//       pagination: {
-//         page,
-//         limit,
-//         total,
-//         pages: Math.ceil(total / limit)
-//       }
-//     });
-//   } catch (error) {
-//     console.error('Error fetching bikes:', error);
-//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-//   }
-// }
+    // Build sort object
+    const sort: any = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-// // POST - Create new bike listing
-// export async function POST(request: NextRequest) {
-//   try {
-//     const admin = await verifyAdmin(request);
-//     if (!admin) {
-//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//     }
+    const skip = (page - 1) * limit;
 
-//     const body = await request.json();
-//     const {
-//       brand,
-//       model,
-//       year,
-//       cc,
-//       mileage,
-//       buyPrice,
-//       sellPrice,
-//       description,
-//       images,
-//       freeWash,
-//       repairs,
-//       partnerInvestments
-//     } = body;
+    // Aggregation pipeline with detailed calculations
+    const pipeline = [
+      { $match: filter },
+      {
+        $lookup: {
+          from: Collections.PARTNERS,
+          localField: 'partnerInvestments.partnerId',
+          foreignField: '_id',
+          as: 'partnerDetails'
+        }
+      },
+      {
+        $lookup: {
+          from: Collections.SELL_RECORDS,
+          localField: '_id',
+          foreignField: 'bikeId',
+          as: 'sellRecords'
+        }
+      },
+      {
+        $lookup: {
+          from: Collections.REVIEWS,
+          localField: '_id',
+          foreignField: 'bikeId',
+          as: 'reviews'
+        }
+      },
+      {
+        $addFields: {
+          // Calculate total investment
+          totalInvestment: {
+            $add: [
+              '$buyPrice',
+              { $sum: '$partnerInvestments.amount' },
+              { $sum: '$repairs.cost' }
+            ]
+          },
+          // Calculate potential profit
+          potentialProfit: {
+            $subtract: [
+              '$sellPrice',
+              {
+                $add: [
+                  '$buyPrice',
+                  { $sum: '$partnerInvestments.amount' },
+                  { $sum: '$repairs.cost' }
+                ]
+              }
+            ]
+          },
+          // Calculate actual profit (if sold)
+          actualProfit: {
+            $cond: {
+              if: { $eq: ['$status', 'sold'] },
+              then: {
+                $subtract: [
+                  { $arrayElemAt: ['$sellRecords.finalPrice', 0] },
+                  {
+                    $add: [
+                      '$buyPrice',
+                      { $sum: '$partnerInvestments.amount' },
+                      { $sum: '$repairs.cost' }
+                    ]
+                  }
+                ]
+              },
+              else: null
+            }
+          },
+          // Calculate average rating
+          averageRating: {
+            $cond: {
+              if: { $gt: [{ $size: '$reviews' }, 0] },
+              then: { $avg: '$reviews.rating' },
+              else: 0
+            }
+          },
+          // Calculate total reviews
+          totalReviews: { $size: '$reviews' },
+          // Calculate days in inventory
+          daysInInventory: {
+            $divide: [
+              {
+                $subtract: [
+                  {
+                    $cond: {
+                      if: { $eq: ['$status', 'sold'] },
+                      then: { $arrayElemAt: ['$sellRecords.saleDate', 0] },
+                      else: new Date()
+                    }
+                  },
+                  '$createdAt'
+                ]
+              },
+              86400000 // milliseconds in a day
+            ]
+          }
+        }
+      },
+      { $sort: sort },
+      { $skip: skip },
+      { $limit: limit }
+    ];
 
-//     // Validate required fields
-//     if (!brand || !model || !year || !cc || !buyPrice || !sellPrice) {
-//       return NextResponse.json(
-//         { error: 'Missing required fields' },
-//         { status: 400 }
-//       );
-//     }
+    const bikes = await bikesCollection.aggregate(pipeline).toArray();
+    const totalCount = await bikesCollection.countDocuments(filter);
 
-//     const { db } = await connectToDatabase();
-//     const bikesCollection = db.collection('bikes');
+    return NextResponse.json({
+      success: true,
+      data: {
+        bikes,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(totalCount / limit),
+          totalCount,
+          hasNext: page * limit < totalCount,
+          hasPrev: page > 1
+        }
+      }
+    });
 
-//     // Calculate profit
-//     const totalCosts = (repairs || []).reduce((sum: number, repair: any) => sum + repair.cost, 0);
-//     const profit = sellPrice - buyPrice - totalCosts;
-
-//     const newBike = {
-//       brand,
-//       model,
-//       year: parseInt(year),
-//       cc: parseInt(cc),
-//       mileage: parseInt(mileage || 0),
-//       buyPrice: parseFloat(buyPrice),
-//       sellPrice: parseFloat(sellPrice),
-//       description,
-//       images: images || [],
-//       freeWash: freeWash || false,
-//       repairs: repairs || [],
-//       partnerInvestments: partnerInvestments || [],
-//       status: 'available',
-//       profit,
-//       totalCosts,
-//       createdAt: new Date(),
-//       updatedAt: new Date(),
-//       createdBy: admin.email
-//     };
-
-//     const result = await bikesCollection.insertOne(newBike);
-
-//     return NextResponse.json({
-//       message: 'Bike created successfully',
-//       bikeId: result.insertedId
-//     }, { status: 201 });
-//   } catch (error) {
-//     console.error('Error creating bike:', error);
-//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-//   }
-// }
-
-// // PUT - Update bike listing
-// export async function PUT(request: NextRequest) {
-//   try {
-//     const admin = await verifyAdmin(request);
-//     if (!admin) {
-//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//     }
-
-//     const body = await request.json();
-//     const { bikeId, ...updateData } = body;
-
-//     if (!bikeId) {
-//       return NextResponse.json(
-//         { error: 'Bike ID is required' },
-//         { status: 400 }
-//       );
-//     }
-
-//     const { db } = await connectToDatabase();
-//     const bikesCollection = db.collection('bikes');
-
-//     // Recalculate profit if prices or repairs changed
-//     if (updateData.buyPrice || updateData.sellPrice || updateData.repairs) {
-//       const existingBike = await bikesCollection.findOne({ _id: new ObjectId(bikeId) });
-//       if (existingBike) {
-//         const buyPrice = updateData.buyPrice || existingBike.buyPrice;
-//         const sellPrice = updateData.sellPrice || existingBike.sellPrice;
-//         const repairs = updateData.repairs || existingBike.repairs || [];
-//         const totalCosts = repairs.reduce((sum: number, repair: any) => sum + repair.cost, 0);
-        
-//         updateData.profit = sellPrice - buyPrice - totalCosts;
-//         updateData.totalCosts = totalCosts;
-//       }
-//     }
-
-//     updateData.updatedAt = new Date();
-//     updateData.updatedBy = admin.email;
-
-//     const result = await bikesCollection.updateOne(
-//       { _id: new ObjectId(bikeId) },
-//       { $set: updateData }
-//     );
-
-//     if (result.matchedCount === 0) {
-//       return NextResponse.json({ error: 'Bike not found' }, { status: 404 });
-//     }
-
-//     return NextResponse.json({ message: 'Bike updated successfully' });
-//   } catch (error) {
-//     console.error('Error updating bike:', error);
-//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-//   }
-// }
-
-// // DELETE - Delete bike listing
-// export async function DELETE(request: NextRequest) {
-//   try {
-//     const admin = await verifyAdmin(request);
-//     if (!admin) {
-//       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-//     }
-
-//     const { searchParams } = new URL(request.url);
-//     const bikeId = searchParams.get('bikeId');
-
-//     if (!bikeId) {
-//       return NextResponse.json(
-//         { error: 'Bike ID is required' },
-//         { status: 400 }
-//       );
-//     }
-
-//     const { db } = await connectToDatabase();
-//     const bikesCollection = db.collection('bikes');
-
-//     const result = await bikesCollection.deleteOne({ _id: new ObjectId(bikeId) });
-
-//     if (result.deletedCount === 0) {
-//       return NextResponse.json({ error: 'Bike not found' }, { status: 404 });
-//     }
-
-//     return NextResponse.json({ message: 'Bike deleted successfully' });
-//   } catch (error) {
-//     console.error('Error deleting bike:', error);
-//     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-//   }
-// }
+  } catch (error) {
+    console.error('Error fetching admin bikes:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
