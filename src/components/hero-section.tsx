@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Shield, CheckCircle, Star } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-
+import  bike from '../../public/bike.jpg'
+import { CountUp } from "./count-up";
+import ReviewsSection from "./reviews-section";
 export default function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen flex items-center">
@@ -74,68 +76,85 @@ export default function HeroSection() {
                 </Link>
               </Button>
             </div>
-
+            
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 pt-8 border-t">
               <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">500+</div>
+                <div className="text-2xl font-bold text-foreground">
+                  <CountUp to={500} suffix="+" />
+                </div>
                 <div className="text-sm text-muted-foreground">Bikes Sold</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">100%</div>
+                <div className="text-2xl font-bold text-foreground">
+                  <CountUp to={100} suffix="%" />
+                </div>
                 <div className="text-sm text-muted-foreground">Verified Papers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-foreground">4.9★</div>
+                <div className="text-2xl font-bold text-foreground">
+                  <CountUp to={4.9} decimals={1} suffix="★" />
+                </div>
                 <div className="text-sm text-muted-foreground">Customer Rating</div>
               </div>
             </div>
+
           </div>
 
           {/* Image */}
-          <div className="relative">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
-              {/* Placeholder for bike image */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-24 h-24 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                    <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Premium Bike Collection</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Floating Cards */}
-            <div className="absolute -bottom-6 -left-6 bg-background border rounded-lg p-4 shadow-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Verified</div>
-                  <div className="text-xs text-muted-foreground">All Documents</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute -top-6 -right-6 bg-background border rounded-lg p-4 shadow-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium">Guaranteed</div>
-                  <div className="text-xs text-muted-foreground">Quality & Service</div>
-                </div>
-              </div>
-            </div>
-          </div>
+<div className="relative aspect-[4/3] rounded-2xl">
+  {/* Inner wrapper just for image & gradient */}
+  <div className="absolute inset-0 overflow-hidden rounded-2xl">
+    <Image
+      src={bike}
+      alt="Premium Bike Collection"
+      fill
+      className="object-cover"
+      priority
+    />
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20" />
+  </div>
+
+  {/* Centered overlay content */}
+  {/* <div className="absolute inset-0 flex items-center justify-center z-10">
+    <p className="text-lg text-muted-foreground bg-background/80 px-3 py-1 rounded-lg inline-block">
+      Premium Bike Collection
+    </p>
+  </div> */}
+
+  {/* Floating Cards (not clipped anymore) */}
+  <div className="absolute -bottom-6 -left-6 z-20 bg-background border rounded-lg p-4 shadow-lg">
+    <div className="flex items-center space-x-3">
+      <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+      </div>
+      <div>
+        <div className="text-sm font-medium">Verified</div>
+        <div className="text-xs text-muted-foreground">All Documents</div>
+      </div>
+    </div>
+  </div>
+
+  <div className="absolute -top-6 -right-6 z-20 bg-background border rounded-lg p-4 shadow-lg">
+    <div className="flex items-center space-x-3">
+      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+        <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+      </div>
+      <div>
+        <div className="text-sm font-medium">Guaranteed</div>
+        <div className="text-xs text-muted-foreground">Quality & Service</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
         </div>
       </div>
+      
+      {/* Reviews Section */}
+      <ReviewsSection />
+
     </section>
   );
 }

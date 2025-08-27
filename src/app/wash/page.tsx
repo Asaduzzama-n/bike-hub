@@ -359,7 +359,7 @@ export default function WashPage() {
 
 
       {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
+      {/* <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h2 className="text-3xl font-bold mb-4">
@@ -383,7 +383,7 @@ export default function WashPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
 
     </div>

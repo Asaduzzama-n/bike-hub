@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { Card } from "./ui/card";
-
+import bikeImage from '../../public/bike.jpg'
 interface BikeCardProps {
   bike: {
     id: string;
@@ -49,7 +49,7 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
         <div className="relative w-full h-full bg-slate-100 dark:bg-slate-800">
           {bike.images && bike.images.length > 0 ? (
             <Image
-              src={bike.images[currentImageIndex] || '/placeholder-bike.jpg'}
+              src={  bikeImage}
               alt={`${bike.brand} ${bike.model}`}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -90,25 +90,25 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
               SOLD
             </Badge>
           )}
-          {bike.isVerified && (
+          {/* {bike.isVerified && (
             <Badge variant="secondary" className="text-xs">
               ✓ Verified
             </Badge>
-          )}
+          )} */}
           {bike.freeWash && (
-            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+            <Badge variant="outline" className="text-xs bg-primary/40 text-white border-primary">
               Free Wash
             </Badge>
           )}
         </div>
 
         {/* Like Button */}
-        <button
+        {/* <button
           onClick={() => setIsLiked(!isLiked)}
           className="absolute top-2 right-2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors"
         >
           <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : 'text-slate-600'}`} />
-        </button>
+        </button> */}
       </div>
 
       {/* Content */}
@@ -203,9 +203,9 @@ export function CompactBikeCard({ bike }: { bike: BikeCardProps['bike'] }) {
               </p>
             </div>
             <p className="text-sm font-bold text-primary">
-              {new Intl.NumberFormat('en-US', {
+              {new Intl.NumberFormat('en-BD', {
                 style: 'currency',
-                currency: 'USD',
+                currency: 'BDT',
                 minimumFractionDigits: 0,
               }).format(bike.price)}
             </p>

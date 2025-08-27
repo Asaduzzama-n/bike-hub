@@ -35,6 +35,8 @@ const allBikes = [
     location: "Dhaka",
     isVerified: true,
     freeWash: true,
+    isTrailing: false,
+    daysHeld: 15,
   },
   {
     id: "2",
@@ -48,6 +50,8 @@ const allBikes = [
     location: "Chittagong",
     isVerified: true,
     freeWash: false,
+    isTrailing: true,
+    daysHeld: 45,
   },
   {
     id: "3",
@@ -61,6 +65,8 @@ const allBikes = [
     location: "Sylhet",
     isVerified: true,
     freeWash: true,
+    isTrailing: false,
+    daysHeld: 8,
   },
   {
     id: "4",
@@ -74,6 +80,8 @@ const allBikes = [
     location: "Rajshahi",
     isVerified: true,
     freeWash: false,
+    isTrailing: true,
+    daysHeld: 52,
   },
   {
     id: "5",
@@ -87,6 +95,8 @@ const allBikes = [
     location: "Khulna",
     isVerified: true,
     freeWash: true,
+    isTrailing: false,
+    daysHeld: 22,
   },
   {
     id: "6",
@@ -100,6 +110,8 @@ const allBikes = [
     location: "Barisal",
     isVerified: true,
     freeWash: true,
+    isTrailing: true,
+    daysHeld: 38,
   },
 ];
 
@@ -109,6 +121,7 @@ export default function ListingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 5000]);
+
   const [viewMode, setViewMode] = useState<"grid-3" | "grid-2">("grid-3");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -121,7 +134,6 @@ export default function ListingsPage() {
       
       const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(bike.brand);
       const matchesPrice = bike.price >= priceRange[0] && bike.price <= priceRange[1];
-      
       return matchesSearch && matchesBrand && matchesPrice;
     });
   }, [searchQuery, selectedBrands, priceRange]);
@@ -129,6 +141,7 @@ export default function ListingsPage() {
   const clearFilters = () => {
     setSelectedBrands([]);
     setPriceRange([0, 5000]);
+
     setSearchQuery("");
   };
 
@@ -140,7 +153,8 @@ export default function ListingsPage() {
     );
   };
 
-  const activeFiltersCount = [
+const activeFiltersCount = [
+    searchQuery.length > 0,
     selectedBrands.length > 0,
     priceRange[0] > 0 || priceRange[1] < 5000,
   ].filter(Boolean).length;
@@ -189,6 +203,8 @@ export default function ListingsPage() {
           </div>
         </div>
       </div>
+
+
 
       <Separator />
 
@@ -362,7 +378,7 @@ export default function ListingsPage() {
       </section>
       
       {/* Footer */}
-      <footer className="bg-slate-50 dark:bg-slate-900 py-12 mt-16">
+      {/* <footer className="bg-slate-50 dark:bg-slate-900 py-12 mt-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
@@ -392,7 +408,7 @@ export default function ListingsPage() {
             <p>&copy; 2024 BikeHub. All rights reserved.</p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
 
   );

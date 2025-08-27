@@ -105,7 +105,7 @@ interface BikeFormData {
   freeWash: boolean;
   repairs: Repair[];
   partners: Partner[];
-  images: File[];
+  images: string[];
 }
 
 // Mock data
@@ -181,7 +181,7 @@ interface BikeSheetProps {
 
 function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = false }: BikeSheetProps) {
   const [formData, setFormData] = useState<BikeFormData>(initialFormData);
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState<string>("");
 
   useEffect(() => {
     if (bike && (mode === 'edit' || mode === 'view')) {
@@ -198,20 +198,19 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
         freeWash: bike.freeWash,
         repairs: bike.repairs.map((r) => ({ name: r.name, cost: r.cost.toString() })),
         partners: bike.partners.map((p) => ({ name: p.name, investment: p.investment.toString() })),
-        images: [],
+        images: bike.images,
       });
     } else {
       setFormData(initialFormData);
-      setImagePreviewUrls([]);
     }
+    setNewImageUrl("");
   }, [bike, mode, isOpen]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...files] }));
-    
-    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
-    setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  const addImageUrl = () => {
+    if (newImageUrl.trim()) {
+      setFormData(prev => ({ ...prev, images: [...prev.images, newImageUrl.trim()] }));
+      setNewImageUrl("");
+    }
   };
 
   const removeImage = (index: number) => {
@@ -219,7 +218,6 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
-    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const addPartner = () => {
@@ -304,7 +302,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
   if (mode === 'view' && bike) {
     return (
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="max-h-[100vh] sm:h-auto sm:side-right sm:w-[95vw] sm:max-w-[800px] overflow-hidden">
+        <SheetContent side="bottom" className="h-[100vh] w-full overflow-hidden">
           <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -466,7 +464,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[100vh] sm:h-auto sm:side-right sm:w-[95vw] sm:max-w-[800px] overflow-hidden">
+      <SheetContent side="bottom" className="h-[100vh] w-full overflow-hidden">
         <div className="flex flex-col h-full">
           <SheetHeader className="px-6 py-4 border-b flex-shrink-0">
             <SheetTitle>{getSheetTitle()}</SheetTitle>
@@ -527,7 +525,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="purchasePrice">Purchase Price ($)</Label>
+                  <Label htmlFor="purchasePrice">Purchase Price (৳)</Label>
                   <Input
                     id="purchasePrice"
                     type="number"
@@ -538,7 +536,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sellingPrice">Selling Price ($)</Label>
+                  <Label htmlFor="sellingPrice">Selling Price (৳)</Label>
                   <Input
                     id="sellingPrice"
                     type="number"
@@ -574,40 +572,37 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
               </div>
 
               {/* Images */}
-              {mode !== 'view' && (
-                <div className="space-y-2">
-                  <Label>Images</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                    <div className="text-center">
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <div className="mt-4">
-                        <Label htmlFor="images" className="cursor-pointer">
-                          <span className="mt-2 block text-sm font-medium text-foreground">
-                            Click to upload images
-                          </span>
-                          <Input
-                            id="images"
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                          />
-                        </Label>
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label>Images</Label>
+                {mode !== 'view' && (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter image URL"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImageUrl())}
+                    />
+                    <Button
+                      type="button"
+                      onClick={addImageUrl}
+                      disabled={!newImageUrl.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  {imagePreviewUrls.length > 0 && (
-                    <div className="grid grid-cols-4 gap-4 mt-4">
-                      {imagePreviewUrls.map((url, index) => (
-                        <div key={index} className="relative">
-                          <Image
-                            src={url}
-                            alt={`Preview ${index + 1}`}
-                            width={100}
-                            height={100}
-                            className="rounded object-cover"
-                          />
+                )}
+                {formData.images.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    {formData.images.map((url, index) => (
+                      <div key={index} className="relative">
+                        <Image
+                          src={url}
+                          alt={`Image ${index + 1}`}
+                          width={100}
+                          height={100}
+                          className="rounded object-cover w-full h-24"
+                        />
+                        {mode !== 'view' && (
                           <Button
                             type="button"
                             variant="destructive"
@@ -617,12 +612,12 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                           >
                             <X className="h-3 w-3" />
                           </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Additional Options */}
               <div className="space-y-4">

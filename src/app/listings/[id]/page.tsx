@@ -132,9 +132,9 @@ export default function BikeDetailsPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <Card>
+            <Card className="p-0">
               <CardContent className="p-0">
-                <div className="relative aspect-video bg-slate-100 dark:bg-slate-800 rounded-t-lg overflow-hidden">
+                <div className="relative aspect-video bg-slate-100 dark:bg-slate-800 rounded-t-lg  overflow-hidden">
                   <img
                     src={bikeDetails.images[currentImageIndex]}
                     alt={`${bikeDetails.brand} ${bikeDetails.model}`}
@@ -180,14 +180,14 @@ export default function BikeDetailsPage() {
                   
                   {/* Badges */}
                   <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                    {bikeDetails.isVerified && (
+                    {/* {bikeDetails.isVerified && (
                       <Badge className="bg-green-500 hover:bg-green-600">
                         <Shield className="w-3 h-3 mr-1" />
                         Verified
                       </Badge>
-                    )}
+                    )} */}
                     {bikeDetails.freeWash && (
-                      <Badge className="bg-blue-500 hover:bg-blue-600">
+                      <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">
                         Free Wash
                       </Badge>
                     )}

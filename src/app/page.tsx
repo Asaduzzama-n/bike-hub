@@ -20,6 +20,7 @@ import {
   Users
 } from "lucide-react";
 import Link from "next/link";
+import ReviewsSection from "@/components/reviews-section";
 
 // Mock data - in real app this would come from API
 const currentListings = [
@@ -379,53 +380,7 @@ export default function Home() {
       
       {/* Reviews Section */}
       <section className="py-16 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Read reviews from our satisfied customers who found their perfect bikes
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reviews.map((review) => (
-              <Card key={review.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4 mb-4">
-                    <Avatar>
-                      <AvatarFallback>{review.avatar}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold">{review.name}</h4>
-                      <div className="flex items-center space-x-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-muted-foreground mb-4">{review.text}</p>
-                  <p className="text-sm text-muted-foreground">{review.date}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="text-center mt-8">
-            <Button variant="outline" size="lg">
-              Load More Reviews
-            </Button>
-          </div>
-        </div>
+        <ReviewsSection></ReviewsSection>
       </section>
       
 

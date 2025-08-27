@@ -150,6 +150,44 @@ const mockBikes: Bike[] = [
     soldDate: "2024-01-28",
     holdDuration: 18,
   },
+  {
+    id: "3",
+    brand: "Bajaj",
+    model: "Pulsar NS200",
+    year: 2021,
+    cc: 200,
+    purchasePrice: 2800,
+    sellingPrice: 3200,
+    miles: 8000,
+    status: "listed",
+    images: ["/placeholder-bike.jpg"],
+    documents: ["RC Book", "Insurance"],
+    description: "Sporty bike in excellent condition",
+    freeWash: true,
+    repairs: [],
+    partners: [],
+    listedDate: "2023-11-20",
+    holdDuration: 45,
+  },
+  {
+    id: "4",
+    brand: "Hero",
+    model: "Splendor Plus",
+    year: 2018,
+    cc: 97,
+    purchasePrice: 1200,
+    sellingPrice: 1800,
+    miles: 35000,
+    status: "listed",
+    images: ["/placeholder-bike.jpg"],
+    documents: ["RC Book"],
+    description: "Reliable commuter bike",
+    freeWash: false,
+    repairs: [{name: "Engine service", cost: "200"}],
+    partners: [],
+    listedDate: "2023-10-15",
+    holdDuration: 62,
+  },
 ];
 
 const brands = ["Honda", "Yamaha", "Bajaj", "Hero", "TVS", "Suzuki", "KTM", "Royal Enfield"];
@@ -201,7 +239,16 @@ export default function AdminListingsPage() {
     const matchesSearch = 
       bike.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bike.model.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || bike.status === statusFilter;
+    
+    let matchesStatus;
+    if (statusFilter === "all") {
+      matchesStatus = true;
+    } else if (statusFilter === "trailing") {
+      matchesStatus = bike.holdDuration > 30;
+    } else {
+      matchesStatus = bike.status === statusFilter;
+    }
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -318,6 +365,7 @@ export default function AdminListingsPage() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="listed">Listed</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
+            <SelectItem value="trailing">Trailing</SelectItem>
           </SelectContent>
         </Select>
       </div>

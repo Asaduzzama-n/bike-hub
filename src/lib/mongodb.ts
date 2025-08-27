@@ -1,51 +1,48 @@
-// import { MongoClient, Db } from 'mongodb';
-// import { initializeDatabase } from './db/init';
+import mongoose from 'mongoose';
+import { MongoClient, Db } from 'mongodb';
+import { createDefaultAdmin } from './db/init';
 
-// if (!process.env.MONGODB_URI) {
-//   throw new Error('Please add your Mongo URI to .env.local');
-// }
+if (!process.env.MONGODB_URI) {
+  throw new Error('Please add your Mongo URI to .env.local');
+}
 
-// const uri = process.env.MONGODB_URI;
-// const options = {};
+const uri = process.env.MONGODB_URI;
+let isInitialized = false;
 
-// let client: MongoClient;
-// let clientPromise: Promise<MongoClient>;
-// let isInitialized = false;
+// Mongoose connection
+let isMongooseConnected = false;
 
-// if (process.env.NODE_ENV === 'development') {
-//   // In development mode, use a global variable so that the value
-//   // is preserved across module reloads caused by HMR (Hot Module Replacement).
-//   let globalWithMongo = global as typeof globalThis & {
-//     _mongoClientPromise?: Promise<MongoClient>;
-//   };
+export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
+  // Connect Mongoose if not already connected
+  if (!isMongooseConnected) {
+    try {
+      await mongoose.connect(uri);
+      isMongooseConnected = true;
+      console.log('Mongoose connected successfully');
+    } catch (error) {
+      console.error('Mongoose connection failed:', error);
+      throw error;
+    }
+  }
 
-//   if (!globalWithMongo._mongoClientPromise) {
-//     client = new MongoClient(uri, options);
-//     globalWithMongo._mongoClientPromise = client.connect();
-//   }
-//   clientPromise = globalWithMongo._mongoClientPromise;
-// } else {
-//   // In production mode, it's best to not use a global variable.
-//   client = new MongoClient(uri, options);
-//   clientPromise = client.connect();
-// }
-
-// export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
-//   const client = await clientPromise;
-//   const db = client.db('bikehub'); // Database name
+  // Also maintain native MongoDB connection for admin operations
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db('bikehub');
   
-//   // Initialize database on first connection
-//   if (!isInitialized) {
-//     try {
-//       await initializeDatabase(db);
-//       isInitialized = true;
-//       console.log('Database initialized successfully');
-//     } catch (error) {
-//       console.error('Database initialization failed:', error);
-//     }
-//   }
+  // Run one-time setup on first connection
+  if (!isInitialized) {
+    try {
+      await createDefaultAdmin(db);
+      isInitialized = true;
+      console.log('Database initialized successfully');
+    } catch (error) {
+      console.error('Database initialization failed:', error);
+    }
+  }
   
-//   return { client, db };
-// }
+  return { client, db };
+}
 
-// export default clientPromise;
+// For backwards compatibility
+export default mongoose;

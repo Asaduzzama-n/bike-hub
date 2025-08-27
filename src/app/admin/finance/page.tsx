@@ -273,7 +273,7 @@ export default function AdminFinancePage() {
               trend="up"
               trendValue="+12.5%"
               description="from last month"
-              prefix="$"
+              prefix="৳"
             />
             <StatCard
               title="Revenue"
@@ -282,7 +282,7 @@ export default function AdminFinancePage() {
               trend="up"
               trendValue="+8.2%"
               description="this month"
-              prefix="$"
+              prefix="৳"
             />
             <StatCard
               title="Total Costs"
@@ -291,7 +291,7 @@ export default function AdminFinancePage() {
               trend="down"
               trendValue="-3.1%"
               description="vs last month"
-              prefix="$"
+              prefix="৳"
             />
             <StatCard
               title="Profit Margin"
@@ -429,12 +429,12 @@ export default function AdminFinancePage() {
                       </TableCell>
                       <TableCell>{transaction.bikeName}</TableCell>
                       <TableCell className={transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}>
-                        ${Math.abs(transaction.amount).toLocaleString()}
+                        ৳{Math.abs(transaction.amount).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {transaction.profit ? (
                           <span className="text-green-600 font-medium">
-                            ${transaction.profit.toLocaleString()}
+                            ৳{transaction.profit.toLocaleString()}
                           </span>
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -606,19 +606,19 @@ export default function AdminFinancePage() {
               title="Total Investments"
               value={mockPartners.reduce((acc, p) => acc + p.totalInvestment, 0)}
               icon={DollarSign}
-              prefix="$"
+              prefix="৳"
             />
             <StatCard
               title="Total Returns"
               value={mockPartners.reduce((acc, p) => acc + p.totalReturns, 0)}
               icon={TrendingUp}
-              prefix="$"
+              prefix="৳"
             />
             <StatCard
               title="Pending Payouts"
               value={mockPartners.reduce((acc, p) => acc + p.pendingPayout, 0)}
               icon={AlertCircle}
-              prefix="$"
+              prefix="৳"
             />
           </div>
 
@@ -647,13 +647,13 @@ export default function AdminFinancePage() {
                     return (
                       <TableRow key={partner.id}>
                         <TableCell className="font-medium">{partner.name}</TableCell>
-                        <TableCell>${partner.totalInvestment.toLocaleString()}</TableCell>
-                        <TableCell className="text-green-600">${partner.totalReturns.toLocaleString()}</TableCell>
+                        <TableCell>৳{partner.totalInvestment.toLocaleString()}</TableCell>
+                        <TableCell className="text-green-600">৳{partner.totalReturns.toLocaleString()}</TableCell>
                         <TableCell>{partner.activeInvestments}</TableCell>
                         <TableCell>{partner.profitShare}%</TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <span>${partner.pendingPayout}</span>
+                            <span>৳{partner.pendingPayout}</span>
                             {partner.pendingPayout > 0 && (
                               <Button size="sm" variant="outline">
                                 Pay Out

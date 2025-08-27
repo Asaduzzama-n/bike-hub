@@ -24,47 +24,29 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      // Mock authentication - replace with actual API call later
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+      // Real API authentication
+      const response = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
       
-      // Mock credentials check
-      if (email === "admin@bikehub.com" && password === "admin123") {
-        // Mock token and admin data
-        const mockToken = "mock-jwt-token-" + Date.now();
-        const mockAdminData = {
-          id: "1",
-          name: "Admin User",
-          email: "admin@bikehub.com",
-          role: "admin",
-          avatar: ""
-        };
-        
-        localStorage.setItem("adminToken", mockToken);
-        localStorage.setItem("adminData", JSON.stringify(mockAdminData));
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store token and admin data from API response
+        localStorage.setItem("adminToken", data.token);
+        localStorage.setItem("adminData", JSON.stringify(data.admin));
         
         // Trigger a custom event to notify AdminLayout of authentication change
         window.dispatchEvent(new Event('authChange'));
         
         router.push("/admin/dashboard");
       } else {
-        setError("Invalid credentials. Use admin@bikehub.com / admin123");
+        setError(data.message || "Invalid credentials");
       }
-      
-      // Original backend call (commented out for now)
-      // const response = await fetch("/api/admin/auth/login", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({ email, password }),
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   localStorage.setItem("adminToken", data.token);
-      //   router.push("/admin/dashboard");
-      // } else {
-      //   setError(data.message || "Invalid credentials");
-      // }
     } catch (error) {
       setError("An error occurred. Please try again.");
     } finally {

@@ -26,6 +26,7 @@ import {
   User,
   Loader2,
   AlertTriangle,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,9 +46,14 @@ const navigation = [
     icon: Package,
   },
   {
-    name: "Trailing Bikes",
-    href: "/admin/trailing-bikes",
-    icon: AlertTriangle,
+    name: "Sell Record",
+    href: "/admin/sell-records",
+    icon: DollarSign,
+  },
+  {
+    name: "Reviews",
+    href: "/admin/reviews",
+    icon: Star,
   },
   {
     name: "Finance",

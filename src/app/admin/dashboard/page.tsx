@@ -14,28 +14,17 @@ import {
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   PieChart,
   Pie,
   Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
-import {
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Package,
-  Clock,
-} from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Package, Clock } from "lucide-react";
 
 // Mock data - in real app this would come from API
 const mockData = {
@@ -55,59 +44,21 @@ const monthlyData = [
   { month: "Jun", sales: 14, profit: 2900 },
 ];
 
-const chartConfig = {
-  sales: {
-    label: "Sales",
-    color: "hsl(var(--chart-1))",
-  },
-  profit: {
-    label: "Profit ($)",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
-
-const brandData = [
-  { brand: "Honda", bikes: 35, fill: "var(--color-honda)" },
-  { brand: "Yamaha", bikes: 25, fill: "var(--color-yamaha)" },
-  { brand: "Bajaj", bikes: 20, fill: "var(--color-bajaj)" },
-  { brand: "Hero", bikes: 12, fill: "var(--color-hero)" },
-  { brand: "Others", bikes: 8, fill: "var(--color-others)" },
+const soldBrandData = [
+  { brand: "Honda", bikes: 28 },
+  { brand: "Yamaha", bikes: 18 },
+  { brand: "Bajaj", bikes: 15 },
+  { brand: "Hero", bikes: 8 },
+  { brand: "Others", bikes: 5 },
 ];
 
-const brandChartConfig = {
-  bikes: {
-    label: "Bikes",
-  },
-  honda: {
-    label: "Honda",
-    color: "hsl(var(--chart-1))",
-  },
-  yamaha: {
-    label: "Yamaha",
-    color: "hsl(var(--chart-2))",
-  },
-  bajaj: {
-    label: "Bajaj",
-    color: "hsl(var(--chart-3))",
-  },
-  hero: {
-    label: "Hero",
-    color: "hsl(var(--chart-4))",
-  },
-  others: {
-    label: "Others",
-    color: "hsl(var(--chart-5))",
-  },
-} satisfies ChartConfig;
-
-
+const orangeShades = ["#FFA500", "#FF8C00", "#FF7F50", "#FF6347", "#FF4500"];
 
 export default function AdminDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
     const timer = setTimeout(() => setIsLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
@@ -210,8 +161,6 @@ export default function AdminDashboard() {
         />
       </div>
 
-
-
       {/* Charts Section */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Sales & Profit Trend */}
@@ -221,88 +170,60 @@ export default function AdminDashboard() {
             <CardDescription>Monthly performance over the last 6 months</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig}>
-              <LineChart
-                accessibilityLayer
-                data={monthlyData}
-                margin={{
-                  left: 12,
-                  right: 12,
-                }}
-              >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                <Bar
-                  yAxisId="left"
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
                   dataKey="sales"
-                  fill="var(--color-sales)"
-                  radius={8}
+                  stroke="#FF8C00"
+                  strokeWidth={3}
+                  activeDot={{ r: 6 }}
                 />
                 <Line
-                  yAxisId="right"
+                  type="monotone"
                   dataKey="profit"
-                  type="natural"
-                  stroke="var(--color-profit)"
-                  strokeWidth={2}
-                  dot={{
-                    fill: "var(--color-profit)",
-                  }}
-                  activeDot={{
-                    r: 6,
-                  }}
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  activeDot={{ r: 6 }}
                 />
               </LineChart>
-            </ChartContainer>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Brand Distribution */}
+        {/* Sold Bike Brands */}
         <Card>
           <CardHeader>
-            <CardTitle>Brand Distribution</CardTitle>
-            <CardDescription>Percentage of bikes by brand</CardDescription>
+            <CardTitle>Sold Bike Brands</CardTitle>
+            <CardDescription>Distribution of sold bikes by brand</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
-            <ChartContainer
-              config={brandChartConfig}
-              className="mx-auto aspect-square max-h-[250px]"
-            >
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Pie
-                  data={brandData}
-                  dataKey="bikes"
-                  nameKey="brand"
-                  innerRadius={60}
-                  strokeWidth={5}
-                >
-                  <Cell fill="var(--color-honda)" />
-                  <Cell fill="var(--color-yamaha)" />
-                  <Cell fill="var(--color-bajaj)" />
-                  <Cell fill="var(--color-hero)" />
-                  <Cell fill="var(--color-others)" />
-                </Pie>
-              </PieChart>
-            </ChartContainer>
+            <PieChart width={400} height={250}>
+              <Pie
+                data={soldBrandData}
+                dataKey="bikes"
+                nameKey="brand"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={5}
+              >
+                {soldBrandData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={orangeShades[index % orangeShades.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
           </CardContent>
         </Card>
       </div>
-
-
-
-
     </div>
   );
 }
