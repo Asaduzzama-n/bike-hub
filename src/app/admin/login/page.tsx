@@ -36,14 +36,16 @@ export default function AdminLoginPage() {
       const data = await response.json();
       
       if (response.ok) {
-        // Store token and admin data from API response
-        localStorage.setItem("adminToken", data.token);
-        localStorage.setItem("adminData", JSON.stringify(data.admin));
+        // Store admin data from API response (token is handled via HTTP-only cookie)
+        localStorage.setItem("adminData", JSON.stringify(data.data.user));
         
         // Trigger a custom event to notify AdminLayout of authentication change
         window.dispatchEvent(new Event('authChange'));
         
-        router.push("/admin/dashboard");
+        // Small delay to ensure auth state is processed before redirect
+        setTimeout(() => {
+          router.push("/admin/dashboard");
+        }, 100);
       } else {
         setError(data.message || "Invalid credentials");
       }

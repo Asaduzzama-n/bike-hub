@@ -7,8 +7,16 @@ export async function POST() {
       { status: 200 }
     );
 
-    // Clear the admin token cookie
+    // Clear both admin token cookies for consistency
     response.cookies.set('adminToken', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0, // Expire immediately
+      path: '/'
+    });
+    
+    response.cookies.set('admin_token', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

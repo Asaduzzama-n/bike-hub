@@ -57,13 +57,13 @@ export default function ReviewsPage() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/reviews');
+      const response = await fetch('/api/admin/reviews');
       const data = await response.json();
       
       if (data.success) {
-        setReviews(data.data);
+        setReviews(data.data?.reviews || data.data);
       } else {
-        toast.error(data.error || 'Failed to fetch reviews');
+        toast.error(data.message || 'Failed to fetch reviews');
       }
     } catch (error) {
       toast.error('Failed to fetch reviews');
@@ -96,7 +96,7 @@ export default function ReviewsPage() {
     setSubmitting(true);
 
     try {
-      const url = editingReview ? `/api/reviews/${editingReview._id}` : '/api/reviews';
+      const url = editingReview ? `/api/admin/reviews/${editingReview._id}` : '/api/admin/reviews';
       const method = editingReview ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
@@ -110,11 +110,11 @@ export default function ReviewsPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(editingReview ? 'Review updated successfully' : 'Review created successfully');
+        toast.success(data.message || (editingReview ? 'Review updated successfully' : 'Review created successfully'));
         setIsSheetOpen(false);
         fetchReviews();
       } else {
-        toast.error(data.error || 'Failed to save review');
+        toast.error(data.message || 'Failed to save review');
       }
     } catch (error) {
       toast.error('Failed to save review');
@@ -130,17 +130,17 @@ export default function ReviewsPage() {
     }
 
     try {
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(`/api/admin/reviews/${reviewId}`, {
         method: 'DELETE',
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Review deleted successfully');
+        toast.success(data.message || 'Review deleted successfully');
         fetchReviews();
       } else {
-        toast.error(data.error || 'Failed to delete review');
+        toast.error(data.message || 'Failed to delete review');
       }
     } catch (error) {
       toast.error('Failed to delete review');
@@ -150,13 +150,12 @@ export default function ReviewsPage() {
 
   const toggleStatus = async (review: IReview) => {
     try {
-      const response = await fetch(`/api/reviews/${review._id}`, {
+      const response = await fetch(`/api/admin/reviews/${review._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...review,
           isActive: !review.isActive,
         }),
       });
@@ -164,10 +163,10 @@ export default function ReviewsPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(`Review ${!review.isActive ? 'activated' : 'deactivated'} successfully`);
+        toast.success(data.message || `Review ${!review.isActive ? 'activated' : 'deactivated'} successfully`);
         fetchReviews();
       } else {
-        toast.error(data.error || 'Failed to update review status');
+        toast.error(data.message || 'Failed to update review status');
       }
     } catch (error) {
       toast.error('Failed to update review status');

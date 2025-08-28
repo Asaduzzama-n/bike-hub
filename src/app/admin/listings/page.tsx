@@ -63,13 +63,19 @@ import BikeSheet from "@/components/bikeSheet";
 
 // Types
 interface Repair {
-  name: string;
+  description: string;
   cost: string;
+  date: string;
 }
 
 interface Partner {
   name: string;
   investment: string;
+}
+
+interface Document {
+  type: string;
+  url: string;
 }
 
 interface Bike {
@@ -78,12 +84,13 @@ interface Bike {
   model: string;
   year: number;
   cc: number;
-  purchasePrice: number;
-  sellingPrice: number;
-  miles: number;
-  status: string;
+  buyPrice: number;
+  sellPrice: number;
+  mileage: number;
+  status: 'available' | 'sold' | 'reserved' | 'maintenance';
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
   images: string[];
-  documents: string[];
+  documents: Document[];
   description: string;
   freeWash: boolean;
   repairs: Repair[];
@@ -98,15 +105,16 @@ interface BikeFormData {
   model: string;
   year: string;
   cc: string;
-  purchasePrice: string;
-  sellingPrice: string;
-  miles: string;
+  buyPrice: string;
+  sellPrice: string;
+  mileage: string;
+  condition: string;
   description: string;
-  documents: string[];
+  documents: Document[];
   freeWash: boolean;
   repairs: Repair[];
   partners: Partner[];
-  images: File[];
+  images: string[];
 }
 
 // Mock data
@@ -117,15 +125,16 @@ const mockBikes: Bike[] = [
     model: "CBR 150R",
     year: 2020,
     cc: 150,
-    purchasePrice: 2000,
-    sellingPrice: 2500,
-    miles: 15000,
-    status: "listed",
+    buyPrice: 2000,
+    sellPrice: 2500,
+    mileage: 15000,
+    status: "available",
+    condition: "good",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book", "Insurance", "Pollution Certificate"],
+    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}, {type: "Pollution Certificate", url: ""}],
     description: "Well maintained bike with all papers",
     freeWash: true,
-    repairs: [{name: "Minor scratches fixed", cost: "150"}],
+    repairs: [{description: "Minor scratches fixed", cost: "150", date: "2024-01-10"}],
     partners: [{name: "John", investment: "500"}],
     listedDate: "2024-01-15",
     holdDuration: 25,
@@ -136,12 +145,13 @@ const mockBikes: Bike[] = [
     model: "FZ-S",
     year: 2019,
     cc: 149,
-    purchasePrice: 1800,
-    sellingPrice: 2200,
-    miles: 22000,
+    buyPrice: 1800,
+    sellPrice: 2200,
+    mileage: 22000,
     status: "sold",
+    condition: "good",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book", "Insurance"],
+    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
     description: "Good condition, single owner",
     freeWash: false,
     repairs: [],
@@ -156,12 +166,13 @@ const mockBikes: Bike[] = [
     model: "Pulsar NS200",
     year: 2021,
     cc: 200,
-    purchasePrice: 2800,
-    sellingPrice: 3200,
-    miles: 8000,
-    status: "listed",
+    buyPrice: 2800,
+    sellPrice: 3200,
+    mileage: 8000,
+    status: "available",
+    condition: "excellent",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book", "Insurance"],
+    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
     description: "Sporty bike in excellent condition",
     freeWash: true,
     repairs: [],
@@ -175,15 +186,16 @@ const mockBikes: Bike[] = [
     model: "Splendor Plus",
     year: 2018,
     cc: 97,
-    purchasePrice: 1200,
-    sellingPrice: 1800,
-    miles: 35000,
-    status: "listed",
+    buyPrice: 1200,
+    sellPrice: 1800,
+    mileage: 35000,
+    status: "available",
+    condition: "fair",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book"],
+    documents: [{type: "RC Book", url: ""}],
     description: "Reliable commuter bike",
     freeWash: false,
-    repairs: [{name: "Engine service", cost: "200"}],
+    repairs: [{description: "Engine service", cost: "200", date: "2023-10-10"}],
     partners: [],
     listedDate: "2023-10-15",
     holdDuration: 62,
@@ -197,9 +209,10 @@ const initialFormData: BikeFormData = {
   model: "",
   year: "",
   cc: "",
-  purchasePrice: "",
-  sellingPrice: "",
-  miles: "",
+  buyPrice: "",
+  sellPrice: "",
+  mileage: "",
+  condition: "",
   description: "",
   documents: [],
   freeWash: false,
@@ -245,6 +258,8 @@ export default function AdminListingsPage() {
       matchesStatus = true;
     } else if (statusFilter === "trailing") {
       matchesStatus = bike.holdDuration > 30;
+    } else if (statusFilter === "listed") {
+      matchesStatus = bike.status === 'available';
     } else {
       matchesStatus = bike.status === statusFilter;
     }
@@ -263,16 +278,17 @@ export default function AdminListingsPage() {
         model: formData.model,
         year: parseInt(formData.year),
         cc: parseInt(formData.cc),
-        purchasePrice: parseFloat(formData.purchasePrice),
-        sellingPrice: parseFloat(formData.sellingPrice),
-        miles: parseInt(formData.miles),
+        buyPrice: parseFloat(formData.buyPrice),
+        sellPrice: parseFloat(formData.sellPrice),
+        mileage: parseInt(formData.mileage),
+        condition: formData.condition as 'excellent' | 'good' | 'fair' | 'poor',
         description: formData.description,
         documents: formData.documents,
         freeWash: formData.freeWash,
         repairs: formData.repairs,
         partners: formData.partners,
-        status: sheetState.bike?.status || "listed",
-        images: ["/placeholder-bike.jpg"], // In real app, use uploaded image URLs
+        status: sheetState.bike?.status || "available",
+        images: formData.images.length > 0 ? formData.images : ["/placeholder-bike.jpg"],
         listedDate: sheetState.bike?.listedDate || new Date().toISOString().split('T')[0],
         holdDuration: sheetState.bike?.holdDuration || 0,
       };
@@ -326,7 +342,7 @@ export default function AdminListingsPage() {
   };
 
   const totalBikes = bikes.length;
-  const listedBikes = bikes.filter(b => b.status === 'listed').length;
+  const listedBikes = bikes.filter(b => b.status === 'available').length;
   const soldBikes = bikes.filter(b => b.status === 'sold').length;
   const avgHoldTime = totalBikes > 0 
     ? Math.round(bikes.reduce((acc, bike) => acc + bike.holdDuration, 0) / totalBikes)
@@ -423,8 +439,8 @@ export default function AdminListingsPage() {
                 <TableRow>
                   <TableHead className="w-[250px]">Bike</TableHead>
                   <TableHead>Year</TableHead>
-                  <TableHead>Purchase Price</TableHead>
-                  <TableHead>Selling Price</TableHead>
+                  <TableHead>Buy Price</TableHead>
+                  <TableHead>Sell Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Hold Duration</TableHead>
                   <TableHead className="text-right w-[70px]">Actions</TableHead>
@@ -445,14 +461,14 @@ export default function AdminListingsPage() {
                         <div>
                           <div className="font-medium">{bike.brand} {bike.model}</div>
                           <div className="text-sm text-muted-foreground">
-                            {bike.cc}cc • {bike.miles.toLocaleString()} miles
+                            {bike.cc}cc • {bike.mileage.toLocaleString()} miles
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>{bike.year}</TableCell>
-                    <TableCell>${bike.purchasePrice.toLocaleString()}</TableCell>
-                    <TableCell>${bike.sellingPrice.toLocaleString()}</TableCell>
+                    <TableCell>${bike.buyPrice.toLocaleString()}</TableCell>
+                    <TableCell>${bike.sellPrice.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge variant={bike.status === 'sold' ? 'default' : 'secondary'}>
                         {bike.status}

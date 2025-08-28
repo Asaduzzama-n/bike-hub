@@ -15,13 +15,13 @@ export default function ReviewsSection() {
 
   const fetchReviews = async () => {
     try {
-      const response = await fetch('/api/reviews');
+      const response = await fetch('/api/admin/reviews');
       const data = await response.json();
       
       if (data.success) {
-        setReviews(data.data);
+        setReviews(data.data?.reviews || data.data);
       } else {
-        setError(data.error || 'Failed to fetch reviews');
+        setError(data.message || 'Failed to fetch reviews');
       }
     } catch (err) {
       setError('Failed to fetch reviews');

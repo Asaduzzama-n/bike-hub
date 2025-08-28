@@ -1,33 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { Collections } from '@/lib/constants';
-import { ObjectId } from 'mongodb';
 import { CrossCollectionHandler } from '@/lib/utils/cross-collection-handler';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { ObjectId } from 'mongodb';
+import { Collections } from '../models';
 
-// Admin verification function
-async function verifyAdmin(request: NextRequest) {
-  try {
-    const cookieStore = cookies();
-    const token = cookieStore.get('adminToken')?.value || cookieStore.get('admin_token')?.value;
-
-    if (!token) {
-      return { success: false, error: 'Admin authentication required', status: 401 };
-    }
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret');
-    const { payload } = await jwtVerify(token, secret);
-    
-    if (payload.role !== 'admin') {
-      return { success: false, error: 'Admin access required', status: 403 };
-    }
-
-    return { success: true, admin: payload };
-  } catch (error) {
-    return { success: false, error: 'Invalid admin token', status: 401 };
-  }
-}
 
 // Transaction wrapper for API endpoints
 export async function withTransaction<T>(

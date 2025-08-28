@@ -62,13 +62,19 @@ import Image from "next/image";
 
 // Types
 interface Repair {
-  name: string;
+  description: string;
   cost: string;
+  date: string;
 }
 
 interface Partner {
   name: string;
   investment: string;
+}
+
+interface Document {
+  type: string;
+  url: string;
 }
 
 interface Bike {
@@ -77,12 +83,13 @@ interface Bike {
   model: string;
   year: number;
   cc: number;
-  purchasePrice: number;
-  sellingPrice: number;
-  miles: number;
-  status: string;
+  buyPrice: number;
+  sellPrice: number;
+  mileage: number;
+  status: 'available' | 'sold' | 'reserved' | 'maintenance';
+  condition: 'excellent' | 'good' | 'fair' | 'poor';
   images: string[];
-  documents: string[];
+  documents: Document[];
   description: string;
   freeWash: boolean;
   repairs: Repair[];
@@ -97,11 +104,12 @@ interface BikeFormData {
   model: string;
   year: string;
   cc: string;
-  purchasePrice: string;
-  sellingPrice: string;
-  miles: string;
+  buyPrice: string;
+  sellPrice: string;
+  mileage: string;
+  condition: string;
   description: string;
-  documents: string[];
+  documents: Document[];
   freeWash: boolean;
   repairs: Repair[];
   partners: Partner[];
@@ -116,15 +124,16 @@ const mockBikes: Bike[] = [
     model: "CBR 150R",
     year: 2020,
     cc: 150,
-    purchasePrice: 2000,
-    sellingPrice: 2500,
-    miles: 15000,
-    status: "listed",
+    buyPrice: 2000,
+    sellPrice: 2500,
+    mileage: 15000,
+    status: "available",
+    condition: "good",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book", "Insurance", "Pollution Certificate"],
+    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}, {type: "Pollution Certificate", url: ""}],
     description: "Well maintained bike with all papers",
     freeWash: true,
-    repairs: [{name: "Minor scratches fixed", cost: "150"}],
+    repairs: [{description: "Minor scratches fixed", cost: "150", date: "2024-01-10"}],
     partners: [{name: "John", investment: "500"}],
     listedDate: "2024-01-15",
     holdDuration: 25,
@@ -135,12 +144,13 @@ const mockBikes: Bike[] = [
     model: "FZ-S",
     year: 2019,
     cc: 149,
-    purchasePrice: 1800,
-    sellingPrice: 2200,
-    miles: 22000,
+    buyPrice: 1800,
+    sellPrice: 2200,
+    mileage: 22000,
     status: "sold",
+    condition: "fair",
     images: ["/placeholder-bike.jpg"],
-    documents: ["RC Book", "Insurance"],
+    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
     description: "Good condition, single owner",
     freeWash: false,
     repairs: [],
@@ -158,9 +168,10 @@ const initialFormData: BikeFormData = {
   model: "",
   year: "",
   cc: "",
-  purchasePrice: "",
-  sellingPrice: "",
-  miles: "",
+  buyPrice: "",
+  sellPrice: "",
+  mileage: "",
+  condition: "",
   description: "",
   documents: [],
   freeWash: false,
@@ -190,13 +201,14 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
         model: bike.model,
         year: bike.year.toString(),
         cc: bike.cc.toString(),
-        purchasePrice: bike.purchasePrice.toString(),
-        sellingPrice: bike.sellingPrice.toString(),
-        miles: bike.miles.toString(),
+        buyPrice: bike.buyPrice.toString(),
+        sellPrice: bike.sellPrice.toString(),
+        mileage: bike.mileage.toString(),
+        condition: bike.condition,
         description: bike.description,
         documents: bike.documents,
         freeWash: bike.freeWash,
-        repairs: bike.repairs.map((r) => ({ name: r.name, cost: r.cost.toString() })),
+        repairs: bike.repairs.map((r) => ({ description: r.description, cost: r.cost.toString(), date: r.date })),
         partners: bike.partners.map((p) => ({ name: p.name, investment: p.investment.toString() })),
         images: bike.images,
       });
@@ -246,7 +258,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
   const addRepair = () => {
     setFormData(prev => ({
       ...prev,
-      repairs: [...prev.repairs, { name: "", cost: "" }]
+      repairs: [...prev.repairs, { description: "", cost: "", date: "" }]
     }));
   };
 
@@ -263,6 +275,29 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
     setFormData(prev => ({
       ...prev,
       repairs: prev.repairs.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addDocument = () => {
+    setFormData(prev => ({
+      ...prev,
+      documents: [...prev.documents, { type: "", url: "" }]
+    }));
+  };
+
+  const updateDocument = (index: number, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: prev.documents.map((doc, i) => 
+        i === index ? { ...doc, [field]: value } : doc
+      )
+    }));
+  };
+
+  const removeDocument = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: prev.documents.filter((_, i) => i !== index)
     }));
   };
 
@@ -293,7 +328,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
       case 'edit':
         return 'Update the bike information';
       case 'view':
-        return `${bike?.year} • ${bike?.cc}cc • ${bike?.miles.toLocaleString()} miles`;
+        return `${bike?.year} • ${bike?.cc}cc • ${bike?.mileage.toLocaleString()} miles`;
       default:
         return '';
     }
@@ -351,17 +386,17 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
               <h3 className="text-base font-semibold text-foreground">Financial Overview</h3>
               <div className="grid grid-cols-1 gap-3">
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Purchase Price</span>
-                  <span className="text-lg font-bold">${bike.purchasePrice.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">Buy Price</span>
+                  <span className="text-lg font-bold">${bike.buyPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Selling Price</span>
-                  <span className="text-lg font-bold">${bike.sellingPrice.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">Sell Price</span>
+                  <span className="text-lg font-bold">${bike.sellPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg border border-green-200">
                   <span className="text-sm font-medium">Net Profit</span>
                   <span className="text-lg font-bold text-green-600">
-                    ${(bike.sellingPrice - bike.purchasePrice - 
+                    ${(bike.sellPrice - bike.buyPrice - 
                       bike.repairs.reduce((sum, repair) => sum + parseFloat(repair.cost || '0'), 0)).toLocaleString()}
                   </span>
                 </div>
@@ -375,7 +410,10 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                 <div className="space-y-2">
                   {bike.repairs.map((repair, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                      <span className="text-sm font-medium">{repair.name}</span>
+                      <div className="flex-1">
+                        <span className="text-sm font-medium">{repair.description}</span>
+                        <p className="text-xs text-muted-foreground">{repair.date}</p>
+                      </div>
                       <span className="text-sm font-semibold">${parseFloat(repair.cost || '0').toLocaleString()}</span>
                     </div>
                   ))}
@@ -397,7 +435,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   {bike.partners.map((partner, index) => {
                     const totalInvestment = bike.partners.reduce((sum, p) => sum + parseFloat(p.investment || '0'), 0);
                     const partnerShare = parseFloat(partner.investment || '0') / totalInvestment;
-                    const partnerProfit = partnerShare * (bike.sellingPrice - bike.purchasePrice - 
+                    const partnerProfit = partnerShare * (bike.sellPrice - bike.buyPrice - 
                       bike.repairs.reduce((sum, repair) => sum + parseFloat(repair.cost || '0'), 0));
                     
                     return (
@@ -444,7 +482,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   <p className="text-sm text-muted-foreground">Documents</p>
                   <div className="flex flex-wrap gap-2">
                     {bike.documents.map((doc, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">{doc}</Badge>
+                      <Badge key={index} variant="outline" className="text-xs">{doc.type}</Badge>
                     ))}
                   </div>
                 </div>
@@ -525,37 +563,55 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="purchasePrice">Purchase Price (৳)</Label>
+                  <Label htmlFor="buyPrice">Buy Price (৳)</Label>
                   <Input
-                    id="purchasePrice"
+                    id="buyPrice"
                     type="number"
-                    value={formData.purchasePrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value }))}
+                    value={formData.buyPrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, buyPrice: e.target.value }))}
                     required
                     disabled={mode === 'view'}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="sellingPrice">Selling Price (৳)</Label>
+                  <Label htmlFor="sellPrice">Sell Price (৳)</Label>
                   <Input
-                    id="sellingPrice"
+                    id="sellPrice"
                     type="number"
-                    value={formData.sellingPrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sellingPrice: e.target.value }))}
+                    value={formData.sellPrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sellPrice: e.target.value }))}
                     required
                     disabled={mode === 'view'}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="miles">Miles</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="mileage">Mileage</Label>
                   <Input
-                    id="miles"
+                    id="mileage"
                     type="number"
-                    value={formData.miles}
-                    onChange={(e) => setFormData(prev => ({ ...prev, miles: e.target.value }))}
+                    value={formData.mileage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mileage: e.target.value }))}
                     required
                     disabled={mode === 'view'}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="condition">Condition</Label>
+                  <Select 
+                    value={formData.condition} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}
+                    disabled={mode === 'view'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select condition" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="excellent">Excellent</SelectItem>
+                      <SelectItem value="good">Good</SelectItem>
+                      <SelectItem value="fair">Fair</SelectItem>
+                      <SelectItem value="poor">Poor</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -619,6 +675,45 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                 )}
               </div>
 
+              {/* Documents */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Documents</Label>
+                  {mode !== 'view' && (
+                    <Button type="button" variant="outline" size="sm" onClick={addDocument}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Document
+                    </Button>
+                  )}
+                </div>
+                {formData.documents.map((document, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      placeholder="Document type (e.g., RC Book, Insurance)"
+                      value={document.type}
+                      onChange={(e) => updateDocument(index, 'type', e.target.value)}
+                      disabled={mode === 'view'}
+                    />
+                    <Input
+                      placeholder="Document URL"
+                      value={document.url}
+                      onChange={(e) => updateDocument(index, 'url', e.target.value)}
+                      disabled={mode === 'view'}
+                    />
+                    {mode !== 'view' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeDocument(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
               {/* Additional Options */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
@@ -645,9 +740,9 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   {formData.repairs.map((repair, index) => (
                     <div key={index} className="flex items-center space-x-2">
                       <Input
-                        placeholder="Repair/modification name"
-                        value={repair.name}
-                        onChange={(e) => updateRepair(index, 'name', e.target.value)}
+                        placeholder="Repair/modification description"
+                        value={repair.description}
+                        onChange={(e) => updateRepair(index, 'description', e.target.value)}
                         disabled={mode === 'view'}
                       />
                       <Input
@@ -655,6 +750,13 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                         type="number"
                         value={repair.cost}
                         onChange={(e) => updateRepair(index, 'cost', e.target.value)}
+                        disabled={mode === 'view'}
+                      />
+                      <Input
+                        placeholder="Date"
+                        type="date"
+                        value={repair.date}
+                        onChange={(e) => updateRepair(index, 'date', e.target.value)}
                         disabled={mode === 'view'}
                       />
                       {mode !== 'view' && (

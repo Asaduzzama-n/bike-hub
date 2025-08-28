@@ -15,18 +15,20 @@ export async function middleware(request: NextRequest) {
     }
 
     // Check for admin token
-    const token = request.cookies.get('adminToken')?.value || 
+    const token = request.cookies.get('auth-token')?.value ||
+                  request.cookies.get('adminToken')?.value ||
                   request.headers.get('authorization')?.replace('Bearer ', '');
-
-    // if (!token) {
-    //   return NextResponse.redirect(new URL('/admin/login', request.url));
-    // }
+    
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
 
     try {
       // Verify the JWT token
-      // await jwtVerify(token, JWT_SECRET);
+      await jwtVerify(token, JWT_SECRET);
       return NextResponse.next();
     } catch (error) {
+      console.error('Token verification failed:', error);
       // Invalid token, redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }

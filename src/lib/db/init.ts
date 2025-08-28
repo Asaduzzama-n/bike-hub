@@ -1,14 +1,13 @@
 import { MongoClient, Db } from "mongodb";
 import bcrypt from "bcryptjs";
+import { Collections } from "../models";
+
 
 // Database config
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017";
 const DB_NAME = process.env.DB_NAME || "bikehub";
 
 // Collections
-const COLLECTIONS = {
-  ADMINS: "admins",
-};
 
 // Connect to MongoDB
 export async function connectDB(): Promise<Db> {
@@ -20,9 +19,9 @@ export async function connectDB(): Promise<Db> {
 
 // Create default admin if not exists
 export async function createDefaultAdmin(db: Db) {
-  const adminsCollection = db.collection(COLLECTIONS.ADMINS);
+  const adminsCollection = db.collection(Collections.ADMINS);
 
-  const existingAdmin = await adminsCollection.findOne({ email: "admin@bikehub.com" });
+  const existingAdmin = await adminsCollection.findOne({ email: process.env.ADMIN_EMAIL });
   if (existingAdmin) {
     console.log("⚡ Admin already exists:", existingAdmin.email);
     return;
@@ -40,7 +39,7 @@ export async function createDefaultAdmin(db: Db) {
   };
 
   await adminsCollection.insertOne(defaultAdmin);
-  console.log("✅ Default admin created: admin@bikehub.com / admin123");
+  console.log("✅ Default admin created: ");
 }
 
 // Run setup (commented out to prevent auto-execution)

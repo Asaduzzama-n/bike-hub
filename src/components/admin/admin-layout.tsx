@@ -78,15 +78,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   useEffect(() => {
     // Check authentication
     const checkAuth = () => {
-      const token = localStorage.getItem("adminToken");
       const adminData = localStorage.getItem("adminData");
       
-      console.log('AdminLayout checkAuth:', { token, adminData, pathname });
+      console.log('AdminLayout checkAuth:', { adminData, pathname });
       
-      if (token && adminData) {
+      if (adminData) {
         console.log('Setting authenticated to true');
-        setAdmin(JSON.parse(adminData));
-        setIsAuthenticated(true);
+        try {
+          const parsedAdminData = JSON.parse(adminData);
+          setAdmin(parsedAdminData);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Failed to parse admin data:', error);
+          // Clear invalid data and redirect to login
+           localStorage.removeItem('adminData');
+          if (pathname !== '/admin/login') {
+            router.push('/admin/login');
+          }
+        }
       } else if (pathname !== "/admin/login") {
         console.log('Redirecting to login - no auth data');
         // Redirect to login if not authenticated and not already on login page
@@ -141,16 +150,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      // Comment out backend call for now
-      // await fetch("/api/admin/auth/logout", {
-      //   method: "POST",
-      // });
-      localStorage.removeItem("adminToken");
+      // Call backend logout API to clear cookies
+      await fetch("/api/admin/auth/logout", {
+        method: "POST",
+        credentials: "include", // Include cookies in request
+      });
+      
+      // Clear localStorage
       localStorage.removeItem("adminData");
+      
       setIsAuthenticated(false);
       router.push("/admin/login");
     } catch (error) {
       console.error("Logout error:", error);
+      // Even if backend call fails, clear local storage and redirect
+      localStorage.removeItem("adminData");
+      setIsAuthenticated(false);
+      router.push("/admin/login");
     }
   };
 
