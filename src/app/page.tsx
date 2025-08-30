@@ -1,3 +1,6 @@
+
+
+
 import Navbar from "@/components/navbar";
 import HeroSection from "@/components/hero-section";
 import BikeCard from "@/components/bike-card";
@@ -21,193 +24,61 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ReviewsSection from "@/components/reviews-section";
+import Footer from "@/components/footer";
+import { publicApi, BikeData } from "@/lib/api";
+import { IBike } from "@/lib/models";
 
-// Mock data - in real app this would come from API
-const currentListings = [
-  {
-    id: "1",
-    brand: "Honda",
-    model: "CBR 150R",
-    year: 2020,
-    cc: 150,
-    price: 2500,
-    mileage: 15000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Dhaka",
-    isVerified: true,
-    freeWash: true,
-  },
-  {
-    id: "2",
-    brand: "Yamaha",
-    model: "FZ-S",
-    year: 2019,
-    cc: 149,
-    price: 2200,
-    mileage: 22000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Chittagong",
-    isVerified: true,
-    freeWash: false,
-  },
-  {
-    id: "3",
-    brand: "Bajaj",
-    model: "Pulsar NS200",
-    year: 2021,
-    cc: 200,
-    price: 3200,
-    mileage: 8000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Sylhet",
-    isVerified: true,
-    freeWash: true,
-  },
-  {
-    id: "4",
-    brand: "TVS",
-    model: "Apache RTR 160",
-    year: 2019,
-    cc: 160,
-    price: 2400,
-    mileage: 18000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Sylhet",
-    isVerified: true,
-    freeWash: true,
-  }
-];
+// Data now comes from API
 
-const recentlySold = [
-  {
-    id: "s1",
-    brand: "Hero",
-    model: "Splendor Plus",
-    year: 2018,
-    cc: 97,
-    price: 1800,
-    mileage: 35000,
-    images: ["/placeholder-bike.jpg"],
-    isSold: true,
-    isVerified: true,
-  },
-  {
-    id: "s2",
-    brand: "TVS",
-    model: "Apache RTR 160",
-    year: 2019,
-    cc: 160,
-    price: 2400,
-    mileage: 18000,
-    images: ["/placeholder-bike.jpg"],
-    isSold: true,
-    isVerified: true,
-  },
-    {
-    id: "s3",
-    brand: "TVS",
-    model: "Apache RTR 160",
-    year: 2019,
-    cc: 160,
-    price: 2400,
-    mileage: 18000,
-    images: ["/placeholder-bike.jpg"],
-    isSold: true,
-    isVerified: true,
-  },
-    {
-    id: "s4",
-    brand: "TVS",
-    model: "Apache RTR 160",
-    year: 2019,
-    cc: 160,
-    price: 2400,
-    mileage: 18000,
-    images: ["/placeholder-bike.jpg"],
-    isSold: true,
-    isVerified: true,
-  },
-  
-  
-];
 
-const reviews = [
-  {
-    id: 1,
-    name: "Ahmed Rahman",
-    rating: 5,
-    text: "Excellent service! Got my bike with all verified papers. The team was very professional and helpful throughout the process.",
-    date: "2024-01-15",
-    avatar: "AR",
-  },
-  {
-    id: 2,
-    name: "Fatima Khan",
-    rating: 5,
-    text: "Bought a Honda CBR from them. Everything was transparent, and they even helped with the name change process. Highly recommended!",
-    date: "2024-01-10",
-    avatar: "FK",
-  },
-  {
-    id: 3,
-    name: "Mohammad Ali",
-    rating: 4,
-    text: "Good quality bikes with proper documentation. The verification process gave me confidence in my purchase.",
-    date: "2024-01-05",
-    avatar: "MA",
-  },
-  {
-    id: 4,
-    name: "Mohammad Ali",
-    rating: 4,
-    text: "Good quality bikes with proper documentation. The verification process gave me confidence in my purchase.",
-    date: "2024-01-05",
-    avatar: "MA",
-  },
-  {
-    id: 5,
-    name: "Mohammad Ali",
-    rating: 4,
-    text: "Good quality bikes with proper documentation. The verification process gave me confidence in my purchase.",
-    date: "2024-01-05",
-    avatar: "MA",
-  },
-  
-];
 
-export default function Home() {
+export default async function Home() {
+  // Fetch current available bikes
+  const currentListingsResponse = await publicApi.getBikes({
+    limit: 4,
+    page: 1,
+  });
+
+  // Fetch recently sold bikes
+  const soldBikesResponse = await publicApi.getBikes({
+    limit: 4,
+    page: 1,
+    status: 'sold'
+  });
+
+  const currentListings = currentListingsResponse.success ? currentListingsResponse.data?.bikes || [] : [];
+  const recentlySold = soldBikesResponse.success ? soldBikesResponse.data?.bikes || [] : [];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      {/* Hero Section */}
       <HeroSection />
       
       {/* Current Listings Section */}
-      <section className="py-16 bg-background">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-4">
               Current Listings
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Discover our latest collection of verified second-hand bikes with complete documentation
+              Browse our latest collection of verified bikes with complete documentation
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {currentListings.map((bike) => (
-              <BikeCard key={bike.id} bike={bike} />
-            ))}
-          </div>
+             {currentListings.map((bike: BikeData) => (
+               <BikeCard key={bike._id} bike={bike} />
+             ))}
+           </div>
           
           <div className="text-center">
-            <Button asChild size="lg">
-              <Link href="/listings">
+            <Link href="/listings">
+              <Button size="lg" className="bg-primary hover:bg-primary/90">
                 View All Listings
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -283,29 +154,10 @@ export default function Home() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recentlySold.map((bike) => (
-              <BikeCard key={bike.id} bike={bike} />
-            ))}
-            
-            {/* Success Stats Card */}
-            {/* <Card className="flex items-center justify-center">
-              <CardContent className="text-center p-8">
-                <div className="space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                    <Award className="w-8 h-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-foreground">500+</h3>
-                    <p className="text-muted-foreground">Happy Customers</p>
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-foreground">100%</h3>
-                    <p className="text-muted-foreground">Verified Papers</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
-          </div>
+             {recentlySold.map((bike: BikeData) => (
+                <BikeCard key={bike._id} bike={bike} />
+              ))}
+           </div>
         </div>
       </section>
       
@@ -383,7 +235,7 @@ export default function Home() {
         <ReviewsSection></ReviewsSection>
       </section>
       
-
+      <Footer />
     </div>
   );
 }

@@ -59,126 +59,25 @@ import {
   FileText,
 } from "lucide-react";
 import Image from "next/image";
+import { 
+  LocalBike, 
+  BikeFormData, 
+  convertLocalBikeToForm, 
+  initialFormData, 
+  brands,
+  Document,
+  Repair,
+  Partner 
+} from "@/lib/utils/interface-converters";
 
 // Types
-interface Repair {
-  description: string;
-  cost: string;
-  date: string;
-}
-
-interface Partner {
-  name: string;
-  investment: string;
-}
-
-interface Document {
-  type: string;
-  url: string;
-}
-
-interface Bike {
+type Bike = LocalBike & {
   id: string;
-  brand: string;
-  model: string;
-  year: number;
-  cc: number;
-  buyPrice: number;
-  sellPrice: number;
-  mileage: number;
-  status: 'available' | 'sold' | 'reserved' | 'maintenance';
-  condition: 'excellent' | 'good' | 'fair' | 'poor';
-  images: string[];
-  documents: Document[];
-  description: string;
-  freeWash: boolean;
-  repairs: Repair[];
-  partners: Partner[];
-  listedDate: string;
-  soldDate?: string;
   holdDuration: number;
-}
-
-interface BikeFormData {
-  brand: string;
-  model: string;
-  year: string;
-  cc: string;
-  buyPrice: string;
-  sellPrice: string;
-  mileage: string;
-  condition: string;
-  description: string;
-  documents: Document[];
-  freeWash: boolean;
-  repairs: Repair[];
-  partners: Partner[];
-  images: string[];
-}
-
-// Mock data
-const mockBikes: Bike[] = [
-  {
-    id: "1",
-    brand: "Honda",
-    model: "CBR 150R",
-    year: 2020,
-    cc: 150,
-    buyPrice: 2000,
-    sellPrice: 2500,
-    mileage: 15000,
-    status: "available",
-    condition: "good",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}, {type: "Pollution Certificate", url: ""}],
-    description: "Well maintained bike with all papers",
-    freeWash: true,
-    repairs: [{description: "Minor scratches fixed", cost: "150", date: "2024-01-10"}],
-    partners: [{name: "John", investment: "500"}],
-    listedDate: "2024-01-15",
-    holdDuration: 25,
-  },
-  {
-    id: "2",
-    brand: "Yamaha",
-    model: "FZ-S",
-    year: 2019,
-    cc: 149,
-    buyPrice: 1800,
-    sellPrice: 2200,
-    mileage: 22000,
-    status: "sold",
-    condition: "fair",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
-    description: "Good condition, single owner",
-    freeWash: false,
-    repairs: [],
-    partners: [],
-    listedDate: "2024-01-10",
-    soldDate: "2024-01-28",
-    holdDuration: 18,
-  },
-];
-
-const brands = ["Honda", "Yamaha", "Bajaj", "Hero", "TVS", "Suzuki", "KTM", "Royal Enfield"];
-
-const initialFormData: BikeFormData = {
-  brand: "",
-  model: "",
-  year: "",
-  cc: "",
-  buyPrice: "",
-  sellPrice: "",
-  mileage: "",
-  condition: "",
-  description: "",
-  documents: [],
-  freeWash: false,
-  repairs: [],
-  partners: [],
-  images: [],
 };
+
+
+
 
 
 interface BikeSheetProps {
@@ -196,22 +95,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
 
   useEffect(() => {
     if (bike && (mode === 'edit' || mode === 'view')) {
-      setFormData({
-        brand: bike.brand,
-        model: bike.model,
-        year: bike.year.toString(),
-        cc: bike.cc.toString(),
-        buyPrice: bike.buyPrice.toString(),
-        sellPrice: bike.sellPrice.toString(),
-        mileage: bike.mileage.toString(),
-        condition: bike.condition,
-        description: bike.description,
-        documents: bike.documents,
-        freeWash: bike.freeWash,
-        repairs: bike.repairs.map((r) => ({ description: r.description, cost: r.cost.toString(), date: r.date })),
-        partners: bike.partners.map((p) => ({ name: p.name, investment: p.investment.toString() })),
-        images: bike.images,
-      });
+      setFormData(convertLocalBikeToForm(bike));
     } else {
       setFormData(initialFormData);
     }
@@ -365,7 +249,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Listed Date</p>
-                  <p className="text-sm font-medium">{bike.listedDate}</p>
+                  <p className="text-sm font-medium">{bike.listedDate instanceof Date ? bike.listedDate.toLocaleDateString() : bike.listedDate}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Hold Duration</p>
@@ -397,7 +281,7 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                   <span className="text-sm font-medium">Net Profit</span>
                   <span className="text-lg font-bold text-green-600">
                     ${(bike.sellPrice - bike.buyPrice - 
-                      bike.repairs.reduce((sum, repair) => sum + parseFloat(repair.cost || '0'), 0)).toLocaleString()}
+                      bike.repairs.reduce((sum, repair) => sum + Number(repair.cost || '0'), 0)).toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -412,15 +296,15 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                     <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                       <div className="flex-1">
                         <span className="text-sm font-medium">{repair.description}</span>
-                        <p className="text-xs text-muted-foreground">{repair.date}</p>
+                        <p className="text-xs text-muted-foreground">{repair.date instanceof Date ? repair.date.toLocaleDateString() : repair.date}</p>
                       </div>
-                      <span className="text-sm font-semibold">${parseFloat(repair.cost || '0').toLocaleString()}</span>
+                      <span className="text-sm font-semibold">${Number(repair.cost || '0').toLocaleString()}</span>
                     </div>
                   ))}
                   <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <span className="text-sm font-medium">Total Repair Cost</span>
                     <span className="text-sm font-bold text-orange-600">
-                      ${bike.repairs.reduce((sum, repair) => sum + parseFloat(repair.cost || '0'), 0).toLocaleString()}
+                      ${bike.repairs.reduce((sum, repair) => sum + Number(repair.cost || '0'), 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -433,10 +317,10 @@ function BikeSheet({ isOpen, onOpenChange, mode, bike, onSubmit, isLoading = fal
                 <h3 className="text-base font-semibold text-foreground">Partner Investments</h3>
                 <div className="space-y-3">
                   {bike.partners.map((partner, index) => {
-                    const totalInvestment = bike.partners.reduce((sum, p) => sum + parseFloat(p.investment || '0'), 0);
-                    const partnerShare = parseFloat(partner.investment || '0') / totalInvestment;
+                    const totalInvestment = bike.partners.reduce((sum, p) => sum + Number(p.investment || '0'), 0);
+                    const partnerShare = Number(partner.investment || '0') / totalInvestment;
                     const partnerProfit = partnerShare * (bike.sellPrice - bike.buyPrice - 
-                      bike.repairs.reduce((sum, repair) => sum + parseFloat(repair.cost || '0'), 0));
+                      bike.repairs.reduce((sum, repair) => sum + Number(repair.cost || '0'), 0));
                     
                     return (
                       <div key={index} className="p-4 bg-muted/50 rounded-lg space-y-3">

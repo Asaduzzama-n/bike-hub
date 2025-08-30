@@ -1,71 +1,56 @@
-"use client";
+import { Star } from "lucide-react";
+import { publicApi, ReviewData } from "@/lib/api";
+import ReviewsClient from "./reviews-client";
 
-import { useEffect, useState } from "react";
-import ReviewCard from "./review-card";
-import { IReview } from "@/lib/models/Review";
 
-export default function ReviewsSection() {
-  const [reviews, setReviews] = useState<IReview[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchReviews();
-  }, []);
-
-  const fetchReviews = async () => {
-    try {
-      const response = await fetch('/api/admin/reviews');
-      const data = await response.json();
-      
-      if (data.success) {
-        setReviews(data.data?.reviews || data.data);
-      } else {
-        setError(data.message || 'Failed to fetch reviews');
-      }
-    } catch (err) {
-      setError('Failed to fetch reviews');
-      console.error('Error fetching reviews:', err);
-    } finally {
-      setLoading(false);
+export default async function ReviewsSection() {
+  // Fetch reviews data server-side
+  let reviews: ReviewData[] = [];
+  
+  try {
+    const response = await publicApi.getReviews({ limit: 20 });
+    if (response.success && response.data?.reviews) {
+      reviews = response.data.reviews;
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-50/80 via-orange-100/60 to-orange-50/80 dark:from-orange-950/30 dark:via-orange-900/20 dark:to-orange-950/30 backdrop-blur-sm border-t border-orange-200/50 dark:border-orange-800/30 py-6">
-        <div className="flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading reviews...</div>
-        </div>
-      </div>
-    );
+  } catch (error) {
+    console.error('Failed to fetch reviews:', error);
+    // Fallback to mock data if API fails
   }
+  
 
-  if (error || reviews.length === 0) {
+
+  if (reviews.length === 0) {
     return (
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-50/80 via-orange-100/60 to-orange-50/80 dark:from-orange-950/30 dark:via-orange-900/20 dark:to-orange-950/30 backdrop-blur-sm border-t border-orange-200/50 dark:border-orange-800/30 py-6">
+      <div className="container mx-auto px-4 py-16">
         <div className="flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">
-            {error || 'No reviews available'}
+          <div className="text-lg text-muted-foreground">
+            No reviews available
           </div>
         </div>
       </div>
     );
   }
 
-  // Duplicate reviews for seamless infinite scroll
-  const duplicatedReviews = [...reviews, ...reviews];
-
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-r from-orange-50/80 via-orange-100/60 to-orange-50/80 dark:from-orange-950/30 dark:via-orange-900/20 dark:to-orange-950/30 backdrop-blur-sm border-t border-orange-200/50 dark:border-orange-800/30 py-6 overflow-hidden">
-      <div className="flex animate-scroll-infinite space-x-8">
-        {duplicatedReviews.map((review, index) => (
-          <ReviewCard
-            key={`${review._id}-${index}`}
-            review={review}
-          />
-        ))}
+    <section className="py-20 bg-gradient-to-br ">
+      <div className="container mx-auto px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-6">
+            <Star className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 tracking-tight">
+            Customer Stories
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Discover why thousands of bike enthusiasts trust BikeHub for their cycling journey
+          </p>
+        </div>
+      
+        {/* Client-side interactive component */}
+        <ReviewsClient reviews={reviews} />
       </div>
-    </div>
+    </section>
   );
 }

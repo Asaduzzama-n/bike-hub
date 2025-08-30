@@ -42,10 +42,7 @@ export default function AdminLoginPage() {
         // Trigger a custom event to notify AdminLayout of authentication change
         window.dispatchEvent(new Event('authChange'));
         
-        // Small delay to ensure auth state is processed before redirect
-        setTimeout(() => {
-          router.push("/admin/dashboard");
-        }, 100);
+        router.push("/admin/dashboard");
       } else {
         setError(data.message || "Invalid credentials");
       }

@@ -24,7 +24,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { DollarSign, TrendingUp, TrendingDown, Package, Clock } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Package, Clock, Loader2, AlertCircle } from "lucide-react";
+import { adminApi } from "@/lib/api";
 
 // Mock data - in real app this would come from API
 const mockData = {
@@ -57,11 +58,56 @@ const orangeShades = ["#FFA500", "#FF8C00", "#FF7F50", "#FF6347", "#FF4500"];
 export default function AdminDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState("2024");
   const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await adminApi.getDashboard();
+      
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+      } else {
+        // Fallback to mock data if API fails
+        setDashboardData({
+          overview: mockData,
+          financial: {
+            monthly: { profit: mockData.totalProfit, revenue: mockData.totalProfit * 1.5, expenses: mockData.totalProfit * 0.5 },
+            trends: { profitGrowth: 12.5, revenueGrowth: 8.2 }
+          },
+          monthlyData: monthlyData,
+          brandData: soldBrandData,
+          recentSales: [],
+          topBikes: []
+        });
+        setError(response.error || response.message || 'Failed to load dashboard data');
+      }
+    } catch (err) {
+      console.error('Dashboard error:', err);
+      // Use mock data as fallback
+      setDashboardData({
+        overview: mockData,
+        financial: {
+          monthly: { profit: mockData.totalProfit, revenue: mockData.totalProfit * 1.5, expenses: mockData.totalProfit * 0.5 },
+          trends: { profitGrowth: 12.5, revenueGrowth: 8.2 }
+        },
+        monthlyData: monthlyData,
+        brandData: soldBrandData,
+        recentSales: [],
+        topBikes: []
+      });
+      setError('Failed to connect to server. Showing sample data.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const StatCard = ({ title, value, icon: Icon, trend, trendValue, description }: any) => (
     <Card>
@@ -100,9 +146,15 @@ export default function AdminDashboard() {
             <div key={i} className="h-32 bg-muted animate-pulse rounded" />
           ))}
         </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading dashboard...</span>
+        </div>
       </div>
     );
   }
+
+  const data = dashboardData || { overview: mockData, financial: { monthly: {}, trends: {} } };
 
   return (
     <div className="space-y-6">
@@ -111,33 +163,44 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">Overview of your bike business performance</p>
+          {error && (
+            <div className="flex items-center mt-2 text-sm text-amber-600">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              {error}
+            </div>
+          )}
         </div>
-        <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="2024">2024</SelectItem>
-            <SelectItem value="2023">2023</SelectItem>
-            <SelectItem value="last-6-months">Last 6 Months</SelectItem>
-            <SelectItem value="last-3-months">Last 3 Months</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchDashboardData}>
+            Refresh
+          </Button>
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="2024">2024</SelectItem>
+              <SelectItem value="2023">2023</SelectItem>
+              <SelectItem value="last-6-months">Last 6 Months</SelectItem>
+              <SelectItem value="last-3-months">Last 3 Months</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total Profit"
-          value={`$${mockData.totalProfit.toLocaleString()}`}
+          title="Monthly Profit"
+          value={`৳${(data.financial?.monthly?.profit || mockData.totalProfit).toLocaleString()}`}
           icon={DollarSign}
           trend="up"
           trendValue="+12.5%"
           description="from last month"
         />
         <StatCard
-          title="Forecasted Profit"
-          value={`$${mockData.forecastedProfit.toLocaleString()}`}
+          title="Monthly Revenue"
+          value={`৳${(data.financial?.monthly?.revenue || mockData.totalProfit * 1.5).toLocaleString()}`}
           icon={TrendingUp}
           trend="up"
           trendValue="+8.2%"
@@ -145,7 +208,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Total Bikes"
-          value={mockData.totalBikes}
+          value={data.overview?.totalBikes || mockData.totalBikes}
           icon={Package}
           trend="up"
           trendValue="+3"
@@ -153,7 +216,7 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Avg. Sell Time"
-          value={`${mockData.averageSellTime} days`}
+          value={`${data.overview?.averageSellTime || mockData.averageSellTime} days`}
           icon={Clock}
           trend="down"
           trendValue="-2 days"
@@ -171,7 +234,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyData}>
+              <LineChart data={data.monthlyData || monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -205,7 +268,7 @@ export default function AdminDashboard() {
           <CardContent className="flex-1 pb-0">
             <PieChart width={400} height={250}>
               <Pie
-                data={soldBrandData}
+                data={data.brandData || soldBrandData}
                 dataKey="bikes"
                 nameKey="brand"
                 cx="50%"
@@ -214,7 +277,7 @@ export default function AdminDashboard() {
                 outerRadius={100}
                 paddingAngle={5}
               >
-                {soldBrandData.map((entry, index) => (
+                {(data.brandData || soldBrandData).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={orangeShades[index % orangeShades.length]} />
                 ))}
               </Pie>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Navbar from "@/components/navbar";
 import BikeCard from "@/components/bike-card";
 import { Button } from "@/components/ui/button";
@@ -18,131 +18,45 @@ import {
   Grid3X3, 
   List,
   ChevronDown,
-  X
+  X,
+  Loader2
 } from "lucide-react";
+import { useBikes } from "@/hooks/useApi";
+import { BikeData } from "@/lib/api";
 
-// Mock data - in real app this would come from API
-const allBikes = [
-  {
-    id: "1",
-    brand: "Honda",
-    model: "CBR 150R",
-    year: 2020,
-    cc: 150,
-    price: 2500,
-    mileage: 15000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Dhaka",
-    isVerified: true,
-    freeWash: true,
-    isTrailing: false,
-    daysHeld: 15,
-  },
-  {
-    id: "2",
-    brand: "Yamaha",
-    model: "FZ-S",
-    year: 2019,
-    cc: 149,
-    price: 2200,
-    mileage: 22000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Chittagong",
-    isVerified: true,
-    freeWash: false,
-    isTrailing: true,
-    daysHeld: 45,
-  },
-  {
-    id: "3",
-    brand: "Bajaj",
-    model: "Pulsar NS200",
-    year: 2021,
-    cc: 200,
-    price: 3200,
-    mileage: 8000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Sylhet",
-    isVerified: true,
-    freeWash: true,
-    isTrailing: false,
-    daysHeld: 8,
-  },
-  {
-    id: "4",
-    brand: "Hero",
-    model: "Splendor Plus",
-    year: 2018,
-    cc: 97,
-    price: 1800,
-    mileage: 35000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Rajshahi",
-    isVerified: true,
-    freeWash: false,
-    isTrailing: true,
-    daysHeld: 52,
-  },
-  {
-    id: "5",
-    brand: "TVS",
-    model: "Apache RTR 160",
-    year: 2019,
-    cc: 160,
-    price: 2400,
-    mileage: 18000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Khulna",
-    isVerified: true,
-    freeWash: true,
-    isTrailing: false,
-    daysHeld: 22,
-  },
-  {
-    id: "6",
-    brand: "Suzuki",
-    model: "Gixxer SF",
-    year: 2020,
-    cc: 155,
-    price: 2800,
-    mileage: 12000,
-    images: ["/placeholder-bike.jpg"],
-    location: "Barisal",
-    isVerified: true,
-    freeWash: true,
-    isTrailing: true,
-    daysHeld: 38,
-  },
-];
+// Removed mock data - now using API data exclusively
 
 const brands = ["Honda", "Yamaha", "Bajaj", "Hero", "TVS", "Suzuki"];
 
 export default function ListingsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState([0, 5000]);
-
+  const [priceRange, setPriceRange] = useState([0, 500000]);
+  const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid-3" | "grid-2">("grid-3");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Filter and search logic
-  const filteredBikes = useMemo(() => {
-    return allBikes.filter((bike) => {
-      const matchesSearch = 
-        bike.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bike.model.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(bike.brand);
-      const matchesPrice = bike.price >= priceRange[0] && bike.price <= priceRange[1];
-      return matchesSearch && matchesBrand && matchesPrice;
-    });
-  }, [searchQuery, selectedBrands, priceRange]);
+  // Fetch bikes from API
+  const { data: bikesData, loading, error, refetch } = useBikes({
+    page,
+    limit: 12,
+    search: searchQuery || undefined,
+    minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
+    maxPrice: priceRange[1] < 500000 ? priceRange[1] : undefined,
+    brand: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
+  });
+
+  // Use API data
+  const allBikes = bikesData?.bikes || [];
+  
+  // No need for client-side filtering since API handles brand filtering
+  const filteredBikes = allBikes;
 
   const clearFilters = () => {
     setSelectedBrands([]);
-    setPriceRange([0, 5000]);
-
+    setPriceRange([0, 500000]);
     setSearchQuery("");
+    setPage(1);
   };
 
   const handleBrandToggle = (brand: string) => {
@@ -156,7 +70,7 @@ export default function ListingsPage() {
 const activeFiltersCount = [
     searchQuery.length > 0,
     selectedBrands.length > 0,
-    priceRange[0] > 0 || priceRange[1] < 5000,
+    priceRange[0] > 0 || priceRange[1] < 500000,
   ].filter(Boolean).length;
 
   const FilterContent = () => (
@@ -187,19 +101,19 @@ const activeFiltersCount = [
 
       {/* Price Range */}
       <div>
-        <h3 className="font-semibold mb-3">Price Range ($)</h3>
+        <h3 className="font-semibold mb-3">Price Range (BDT)</h3>
         <div className="space-y-4">
           <Slider
             value={priceRange}
             onValueChange={setPriceRange}
-            max={5000}
+            max={500000}
             min={0}
-            step={100}
+            step={10000}
             className="w-full"
           />
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>৳{priceRange[0].toLocaleString()}</span>
+            <span>৳{priceRange[1].toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -337,7 +251,25 @@ const activeFiltersCount = [
 
             {/* Bikes Grid/List */}
             <div className="flex-1">
-              {filteredBikes.length === 0 ? (
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <span className="ml-2 text-muted-foreground">Loading bikes...</span>
+                </div>
+              ) : error ? (
+                <Card className="p-12 text-center">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                      <X className="w-8 h-8 text-red-600 dark:text-red-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold">Error loading bikes</h3>
+                    <p className="text-muted-foreground">{error}</p>
+                    <Button onClick={refetch} variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                </Card>
+              ) : filteredBikes.length === 0 ? (
                 <Card className="p-12 text-center">
                   <div className="space-y-4">
                     <div className="w-16 h-16 mx-auto bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
@@ -359,16 +291,28 @@ const activeFiltersCount = [
                     : "grid-cols-1 md:grid-cols-2"
                 }`}>
                   {filteredBikes.map((bike) => (
-                    <BikeCard key={bike.id} bike={bike} />
+                    <BikeCard key={'_id' in bike ? bike._id : bike.id} bike={bike} />
                   ))}
                 </div>
               )}
 
               {/* Load More Button (for pagination) */}
-              {filteredBikes.length > 0 && (
+              {filteredBikes.length > 0 && bikesData?.pagination?.hasNextPage && (
                 <div className="text-center mt-12">
-                  <Button variant="outline" size="lg">
-                    Load More Bikes
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => setPage(prev => prev + 1)}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Bikes'
+                    )}
                   </Button>
                 </div>
               )}

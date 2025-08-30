@@ -57,169 +57,23 @@ import {
   Users,
   Wrench,
   FileText,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import BikeSheet from "@/components/bikeSheet";
+import { adminApi, type BikeData, type PaginationData } from "@/lib/api";
+import { 
+  LocalBike, 
+  BikeFormData, 
+  convertApiBikeToLocal, 
+  convertFormToApiData, 
+  initialFormData, 
+  brands 
+} from "@/lib/utils/interface-converters";
 
 // Types
-interface Repair {
-  description: string;
-  cost: string;
-  date: string;
-}
-
-interface Partner {
-  name: string;
-  investment: string;
-}
-
-interface Document {
-  type: string;
-  url: string;
-}
-
-interface Bike {
-  id: string;
-  brand: string;
-  model: string;
-  year: number;
-  cc: number;
-  buyPrice: number;
-  sellPrice: number;
-  mileage: number;
-  status: 'available' | 'sold' | 'reserved' | 'maintenance';
-  condition: 'excellent' | 'good' | 'fair' | 'poor';
-  images: string[];
-  documents: Document[];
-  description: string;
-  freeWash: boolean;
-  repairs: Repair[];
-  partners: Partner[];
-  listedDate: string;
-  soldDate?: string;
-  holdDuration: number;
-}
-
-interface BikeFormData {
-  brand: string;
-  model: string;
-  year: string;
-  cc: string;
-  buyPrice: string;
-  sellPrice: string;
-  mileage: string;
-  condition: string;
-  description: string;
-  documents: Document[];
-  freeWash: boolean;
-  repairs: Repair[];
-  partners: Partner[];
-  images: string[];
-}
-
-// Mock data
-const mockBikes: Bike[] = [
-  {
-    id: "1",
-    brand: "Honda",
-    model: "CBR 150R",
-    year: 2020,
-    cc: 150,
-    buyPrice: 2000,
-    sellPrice: 2500,
-    mileage: 15000,
-    status: "available",
-    condition: "good",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}, {type: "Pollution Certificate", url: ""}],
-    description: "Well maintained bike with all papers",
-    freeWash: true,
-    repairs: [{description: "Minor scratches fixed", cost: "150", date: "2024-01-10"}],
-    partners: [{name: "John", investment: "500"}],
-    listedDate: "2024-01-15",
-    holdDuration: 25,
-  },
-  {
-    id: "2",
-    brand: "Yamaha",
-    model: "FZ-S",
-    year: 2019,
-    cc: 149,
-    buyPrice: 1800,
-    sellPrice: 2200,
-    mileage: 22000,
-    status: "sold",
-    condition: "good",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
-    description: "Good condition, single owner",
-    freeWash: false,
-    repairs: [],
-    partners: [],
-    listedDate: "2024-01-10",
-    soldDate: "2024-01-28",
-    holdDuration: 18,
-  },
-  {
-    id: "3",
-    brand: "Bajaj",
-    model: "Pulsar NS200",
-    year: 2021,
-    cc: 200,
-    buyPrice: 2800,
-    sellPrice: 3200,
-    mileage: 8000,
-    status: "available",
-    condition: "excellent",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}, {type: "Insurance", url: ""}],
-    description: "Sporty bike in excellent condition",
-    freeWash: true,
-    repairs: [],
-    partners: [],
-    listedDate: "2023-11-20",
-    holdDuration: 45,
-  },
-  {
-    id: "4",
-    brand: "Hero",
-    model: "Splendor Plus",
-    year: 2018,
-    cc: 97,
-    buyPrice: 1200,
-    sellPrice: 1800,
-    mileage: 35000,
-    status: "available",
-    condition: "fair",
-    images: ["/placeholder-bike.jpg"],
-    documents: [{type: "RC Book", url: ""}],
-    description: "Reliable commuter bike",
-    freeWash: false,
-    repairs: [{description: "Engine service", cost: "200", date: "2023-10-10"}],
-    partners: [],
-    listedDate: "2023-10-15",
-    holdDuration: 62,
-  },
-];
-
-const brands = ["Honda", "Yamaha", "Bajaj", "Hero", "TVS", "Suzuki", "KTM", "Royal Enfield"];
-
-const initialFormData: BikeFormData = {
-  brand: "",
-  model: "",
-  year: "",
-  cc: "",
-  buyPrice: "",
-  sellPrice: "",
-  mileage: "",
-  condition: "",
-  description: "",
-  documents: [],
-  freeWash: false,
-  repairs: [],
-  partners: [],
-  images: [],
-};
+type Bike = LocalBike;
 
 // Reusable Bike Sheet Component
 interface BikeSheetProps {
@@ -234,7 +88,7 @@ interface BikeSheetProps {
 
 // Main Admin Listings Component
 export default function AdminListingsPage() {
-  const [bikes, setBikes] = useState<Bike[]>(mockBikes);
+  const [bikes, setBikes] = useState<Bike[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sheetState, setSheetState] = useState<{
@@ -247,61 +101,87 @@ export default function AdminListingsPage() {
     bike: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationData | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const filteredBikes = bikes.filter((bike) => {
-    const matchesSearch = 
-      bike.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bike.model.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    let matchesStatus;
-    if (statusFilter === "all") {
-      matchesStatus = true;
-    } else if (statusFilter === "trailing") {
-      matchesStatus = bike.holdDuration > 30;
-    } else if (statusFilter === "listed") {
-      matchesStatus = bike.status === 'available';
-    } else {
-      matchesStatus = bike.status === statusFilter;
+  // Fetch bikes from API
+  const fetchBikes = async (page = 1) => {
+    try {
+      setIsPageLoading(true);
+      setError(null);
+      
+      const response = await adminApi.getBikes({
+        page,
+        limit: 20,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        search: searchQuery || undefined,
+        sortBy,
+        sortOrder,
+      });
+      
+      if (response.success && response.data) {
+        const convertedBikes = response.data.bikes.map(convertApiBikeToLocal);
+        setBikes(convertedBikes);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+      } else {
+        setError(response.error || response.message || 'Failed to fetch bikes');
+        setBikes([]);
+      }
+    } catch (err) {
+      console.error('Error fetching bikes:', err);
+      setError('Failed to connect to server');
+      setBikes([]);
+    } finally {
+      setIsPageLoading(false);
     }
-    
-    return matchesSearch && matchesStatus;
-  });
+  };
+
+  // Load bikes on component mount and when filters change
+  useEffect(() => {
+    fetchBikes(1);
+  }, [statusFilter, searchQuery, sortBy, sortOrder]);
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    fetchBikes(page);
+  };
+
+  // Since filtering is now done server-side, we use bikes directly
+  const filteredBikes = bikes;
 
   const handleSubmit = async (formData: BikeFormData) => {
     setIsLoading(true);
 
     try {
-      // In real app, this would upload images and save to database
-      const newBike: Bike = {
-        id: sheetState.bike?.id || Date.now().toString(),
-        brand: formData.brand,
-        model: formData.model,
-        year: parseInt(formData.year),
-        cc: parseInt(formData.cc),
-        buyPrice: parseFloat(formData.buyPrice),
-        sellPrice: parseFloat(formData.sellPrice),
-        mileage: parseInt(formData.mileage),
-        condition: formData.condition as 'excellent' | 'good' | 'fair' | 'poor',
-        description: formData.description,
-        documents: formData.documents,
-        freeWash: formData.freeWash,
-        repairs: formData.repairs,
-        partners: formData.partners,
-        status: sheetState.bike?.status || "available",
-        images: formData.images.length > 0 ? formData.images : ["/placeholder-bike.jpg"],
-        listedDate: sheetState.bike?.listedDate || new Date().toISOString().split('T')[0],
-        holdDuration: sheetState.bike?.holdDuration || 0,
-      };
-
+      const bikeData = convertFormToApiData(formData);
+      
+      // Preserve existing status if editing
       if (sheetState.mode === 'edit' && sheetState.bike) {
-        setBikes(prev => prev.map(bike => bike.id === sheetState.bike?.id ? newBike : bike));
-      } else {
-        setBikes(prev => [...prev, newBike]);
+        bikeData.status = sheetState.bike.status;
       }
 
-      setSheetState({ isOpen: false, mode: 'create', bike: null });
+      let response;
+      if (sheetState.mode === 'edit' && sheetState.bike) {
+        response = await adminApi.updateBike(sheetState.bike.id, bikeData);
+      } else {
+        response = await adminApi.createBike(bikeData);
+      }
+
+      if (response.success) {
+        setSheetState({ isOpen: false, mode: 'create', bike: null });
+        // Refresh the bikes list
+        await fetchBikes(currentPage);
+      } else {
+        setError(response.error || response.message || 'Failed to save bike');
+      }
     } catch (error) {
       console.error("Error saving bike:", error);
+      setError('Failed to save bike');
     } finally {
       setIsLoading(false);
     }
@@ -323,8 +203,20 @@ export default function AdminListingsPage() {
     });
   };
 
-  const handleDelete = (bikeId: string) => {
-    setBikes(prev => prev.filter(bike => bike.id !== bikeId));
+  const handleDelete = async (bikeId: string) => {
+    try {
+      const response = await adminApi.deleteBike(bikeId);
+      
+      if (response.success) {
+        // Refresh the bikes list
+        await fetchBikes(currentPage);
+      } else {
+        setError(response.error || response.message || 'Failed to delete bike');
+      }
+    } catch (error) {
+      console.error('Error deleting bike:', error);
+      setError('Failed to delete bike');
+    }
   };
 
   const openNewBikeDialog = () => {
@@ -341,12 +233,23 @@ export default function AdminListingsPage() {
     }
   };
 
-  const totalBikes = bikes.length;
+  const totalBikes = pagination?.totalItems || 0;
   const listedBikes = bikes.filter(b => b.status === 'available').length;
   const soldBikes = bikes.filter(b => b.status === 'sold').length;
   const avgHoldTime = totalBikes > 0 
-    ? Math.round(bikes.reduce((acc, bike) => acc + bike.holdDuration, 0) / totalBikes)
+    ? Math.round(bikes.reduce((acc, bike) => acc + (bike.holdDuration || 0), 0) / totalBikes)
     : 0;
+
+  if (isPageLoading) {
+    return (
+      <div className="space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading bikes...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -355,11 +258,22 @@ export default function AdminListingsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Bike Listings</h1>
           <p className="text-muted-foreground">Manage your bike inventory and listings</p>
+          {error && (
+            <div className="flex items-center mt-2 text-sm text-red-600">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              {error}
+            </div>
+          )}
         </div>
-        <Button onClick={openNewBikeDialog} className="w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Bike
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchBikes(currentPage)}>
+            Refresh
+          </Button>
+          <Button onClick={openNewBikeDialog} className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Bike
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -379,9 +293,10 @@ export default function AdminListingsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="listed">Listed</SelectItem>
+            <SelectItem value="available">Available</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
-            <SelectItem value="trailing">Trailing</SelectItem>
+            <SelectItem value="reserved">Reserved</SelectItem>
+            <SelectItem value="maintenance">Maintenance</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -475,8 +390,8 @@ export default function AdminListingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <span className={bike.holdDuration > 30 ? 'text-orange-600 font-medium' : ''}>
-                        {bike.holdDuration} days
+                      <span className={bike.holdDuration && bike.holdDuration > 30 ? 'text-orange-600 font-medium' : ''}>
+                        {bike.holdDuration ? `${bike.holdDuration} days` : 'N/A'}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -514,6 +429,51 @@ export default function AdminListingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Showing {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1} to{' '}
+            {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of{' '}
+            {pagination.totalItems} bikes
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevPage}
+            >
+              Previous
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                const pageNum = Math.max(1, pagination.currentPage - 2) + i;
+                if (pageNum > pagination.totalPages) return null;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pageNum === pagination.currentPage ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              disabled={!pagination.hasNextPage}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Reusable Bike Sheet */}
       <BikeSheet

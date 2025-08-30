@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import Review from '@/lib/models/Review';
 import { withValidation } from '@/lib/middleware';
-import { withAdminAuth, AdminAuthRequest } from '@/lib/middleware/adminAuth';
+import { AdminAuthRequest } from '@/lib/middleware/adminAuth';
+import { withPublicRead } from '@/lib/middleware/methodAuth';
 import { createReviewSchema, getReviewSchema } from '@/lib/validations/review';
 
 // GET /api/admin/reviews - Get all reviews with pagination and filtering
-export const GET = withAdminAuth(
+export const GET = withPublicRead(
   withValidation(getReviewSchema, async (
     request: AdminAuthRequest,
     validatedData: any
@@ -74,7 +75,7 @@ export const GET = withAdminAuth(
 }));
 
 // POST /api/admin/reviews - Create new review
-export const POST = withAdminAuth(
+export const POST = withPublicRead(
   withValidation(createReviewSchema, async (
     request: AdminAuthRequest,
     validatedData: any

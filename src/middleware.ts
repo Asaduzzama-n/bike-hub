@@ -7,10 +7,13 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 export async function middleware(request: NextRequest) {
-  // Check if the request is for admin routes
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    // Allow access to login page
-    if (request.nextUrl.pathname === '/admin/login') {
+  // Check if the request is for admin routes (both pages and API)
+  if (request.nextUrl.pathname.startsWith('/admin') || 
+      request.nextUrl.pathname.startsWith('/api/admin')) {
+    
+    // Allow access to login page and auth API
+    if (request.nextUrl.pathname === '/admin/login' ||
+        request.nextUrl.pathname.startsWith('/api/admin/auth/')) {
       return NextResponse.next();
     }
 
@@ -20,6 +23,14 @@ export async function middleware(request: NextRequest) {
                   request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
+      // For API routes, return 401
+      if (request.nextUrl.pathname.startsWith('/api/admin')) {
+        return NextResponse.json(
+          { success: false, message: 'Access denied. No token provided.' },
+          { status: 401 }
+        );
+      }
+      // For admin pages, redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
 
@@ -29,7 +40,15 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     } catch (error) {
       console.error('Token verification failed:', error);
-      // Invalid token, redirect to login
+      
+      // For API routes, return 401
+      if (request.nextUrl.pathname.startsWith('/api/admin')) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid or expired token.' },
+          { status: 401 }
+        );
+      }
+      // For admin pages, redirect to login
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
@@ -40,5 +59,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/api/admin/:path*'
   ],
 };

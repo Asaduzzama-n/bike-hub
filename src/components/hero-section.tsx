@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import  bike from '../../public/bike.jpg'
 import { CountUp } from "./count-up";
-import ReviewsSection from "./reviews-section";
+
 export default function HeroSection() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen flex items-center">
@@ -152,9 +152,6 @@ export default function HeroSection() {
         </div>
       </div>
       
-      {/* Reviews Section */}
-      <ReviewsSection />
-
     </section>
   );
 }

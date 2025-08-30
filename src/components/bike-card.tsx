@@ -7,21 +7,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { Card } from "./ui/card";
 import bikeImage from '../../public/bike.jpg'
+import { BikeData } from '@/lib/api';
+import { IBike } from "@/lib/models";
+
 interface BikeCardProps {
-  bike: {
-    id: string;
-    brand: string;
-    model: string;
-    year: number;
-    cc: number;
-    price: number;
-    mileage: number;
-    images: string[];
-    location?: string;
-    isSold?: boolean;
-    isVerified?: boolean;
-    freeWash?: boolean;
-  };
+  bike: BikeData;
   variant?: "default" | "compact";
 }
 
@@ -30,19 +20,28 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-BD', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'BDT',
       minimumFractionDigits: 0,
     }).format(price);
   };
+
+  // Get the actual price (sellPrice for API data, price for mock data)
+  const actualPrice = bike.sellPrice;
+  
+  // Check if bike is sold (status === 'sold' for API data, isSold for mock data)
+  const isSold = bike.status === 'sold';
+  
+
+  const bikeId =bike._id;
 
   const formatMileage = (mileage: number) => {
     return `${mileage.toLocaleString()} miles`;
   };
 
   return (
-    <div className={`group bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border border-gray-200 ${bike.isSold ? 'opacity-75' : ''}`}>
+    <div className={`group bg-white rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border border-gray-200 ${isSold ? 'opacity-75' : ''}`}>
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         {/* Main Image */}
@@ -85,16 +84,11 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
 
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col space-y-1">
-          {bike.isSold && (
+          {isSold && (
             <Badge variant="destructive" className="text-xs">
               SOLD
             </Badge>
           )}
-          {/* {bike.isVerified && (
-            <Badge variant="secondary" className="text-xs">
-              ✓ Verified
-            </Badge>
-          )} */}
           {bike.freeWash && (
             <Badge variant="outline" className="text-xs bg-primary/40 text-white border-primary">
               Free Wash
@@ -126,7 +120,7 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-blue-600">
-                {formatPrice(bike.price)}
+                {formatPrice(actualPrice)}
               </p>
             </div>
           </div>
@@ -137,12 +131,12 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
               <Gauge className="w-4 h-4" />
               <span>{formatMileage(bike.mileage)}</span>
             </div>
-            {bike.location && (
+            {/* {bike. && (
               <div className="flex items-center space-x-1">
                 <MapPin className="w-4 h-4" />
                 <span>{bike.location}</span>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -150,7 +144,7 @@ export default function BikeCard({ bike, variant = "default" }: BikeCardProps) {
       {/* Footer */}
       <div className="px-5 pb-5">
         <Link 
-          href={`/listings/${bike.id}`}
+          href={`/listings/${bikeId}`}
           className="w-full bg-primary hover:bg-primary/95 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
         >
           <Eye className="w-4 h-4" />
@@ -182,7 +176,7 @@ export function CompactBikeCard({ bike }: { bike: BikeCardProps['bike'] }) {
               </svg>
             </div>
           )}
-          {bike.isSold && (
+          {bike.status === 'sold' && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <Badge variant="destructive" className="text-xs">
                 SOLD
@@ -207,7 +201,7 @@ export function CompactBikeCard({ bike }: { bike: BikeCardProps['bike'] }) {
                 style: 'currency',
                 currency: 'BDT',
                 minimumFractionDigits: 0,
-              }).format(bike.price)}
+              }).format(bike.sellPrice)}
             </p>
           </div>
         </div>
